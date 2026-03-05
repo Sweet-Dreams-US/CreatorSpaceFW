@@ -1,0 +1,79 @@
+"use client";
+
+import { useEffect, useState } from "react";
+
+const SCENES = [
+  { id: "scene-arrival", label: "Arrival" },
+  { id: "scene-landing", label: "Meetups" },
+  { id: "scene-event", label: "Event" },
+  { id: "scene-community", label: "Creators" },
+  { id: "scene-constellation", label: "Connect" },
+  { id: "scene-close", label: "Close" },
+];
+
+export default function FloatingNav() {
+  const [active, setActive] = useState(0);
+  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const idx = SCENES.findIndex((s) => s.id === entry.target.id);
+            if (idx !== -1) setActive(idx);
+          }
+        });
+      },
+      { threshold: 0.3 }
+    );
+
+    SCENES.forEach((s) => {
+      const el = document.getElementById(s.id);
+      if (el) observer.observe(el);
+    });
+
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <nav
+      className="fixed right-4 top-1/2 z-[100] hidden -translate-y-1/2 md:block"
+      aria-label="Section navigation"
+    >
+      <div className="flex flex-col items-end gap-3">
+        {SCENES.map((scene, i) => (
+          <button
+            key={scene.id}
+            onClick={() =>
+              document
+                .getElementById(scene.id)
+                ?.scrollIntoView({ behavior: "smooth" })
+            }
+            onMouseEnter={() => setHoveredIdx(i)}
+            onMouseLeave={() => setHoveredIdx(null)}
+            className="group flex items-center gap-2"
+            aria-label={scene.label}
+          >
+            {/* Label on hover */}
+            <span
+              className={`font-[family-name:var(--font-mono)] text-[10px] text-[var(--color-smoke)] transition-opacity duration-200 ${
+                hoveredIdx === i ? "opacity-100" : "opacity-0"
+              }`}
+            >
+              {scene.label}
+            </span>
+            {/* Dot */}
+            <span
+              className={`block rounded-full transition-all duration-300 ${
+                active === i
+                  ? "h-2.5 w-2.5 bg-[var(--color-coral)] shadow-[0_0_8px_#fa9277]"
+                  : "h-1.5 w-1.5 bg-[var(--color-ash)] group-hover:bg-[var(--color-smoke)]"
+              }`}
+            />
+          </button>
+        ))}
+      </div>
+    </nav>
+  );
+}

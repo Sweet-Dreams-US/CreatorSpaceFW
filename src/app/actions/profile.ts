@@ -1,0 +1,108 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { createServerSupabaseClient, supabaseAdmin } from "@/lib/supabase-server";
+import { isAdmin } from "@/lib/admin";
+
+export async function updateProfile(formData: FormData) {
+  const supabase = await createServerSupabaseClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Not authenticated." };
+  }
+
+  const firstName = (formData.get("first_name") as string)?.trim();
+  const lastName = (formData.get("last_name") as string)?.trim();
+
+  if (!firstName || !lastName) {
+    return { error: "First and last name are required." };
+  }
+
+  const { error } = await supabaseAdmin
+    .from("creators")
+    .update({
+      first_name: firstName,
+      last_name: lastName,
+      company: (formData.get("company") as string)?.trim() || null,
+      job_title: (formData.get("job_title") as string)?.trim() || null,
+      social: (formData.get("social") as string)?.trim() || null,
+      website: (formData.get("website") as string)?.trim() || null,
+      bio: (formData.get("bio") as string)?.trim() || null,
+      skills: (formData.get("skills") as string)?.trim() || "",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("auth_id", user.id);
+
+  if (error) {
+    return { error: "Failed to update profile." };
+  }
+
+  revalidatePath("/directory");
+  return { success: true };
+}
+
+export async function adminUpdateProfile(creatorId: string, formData: FormData) {
+  const supabase = await createServerSupabaseClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user || !isAdmin(user.email)) {
+    return { error: "Not authorized." };
+  }
+
+  const firstName = (formData.get("first_name") as string)?.trim();
+  const lastName = (formData.get("last_name") as string)?.trim();
+
+  if (!firstName || !lastName) {
+    return { error: "First and last name are required." };
+  }
+
+  const { error } = await supabaseAdmin
+    .from("creators")
+    .update({
+      first_name: firstName,
+      last_name: lastName,
+      company: (formData.get("company") as string)?.trim() || null,
+      job_title: (formData.get("job_title") as string)?.trim() || null,
+      social: (formData.get("social") as string)?.trim() || null,
+      website: (formData.get("website") as string)?.trim() || null,
+      bio: (formData.get("bio") as string)?.trim() || null,
+      skills: (formData.get("skills") as string)?.trim() || "",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", creatorId);
+
+  if (error) {
+    return { error: "Failed to update profile." };
+  }
+
+  revalidatePath("/directory");
+  return { success: true };
+}
+
+export async function updateAvatarUrl(url: string) {
+  const supabase = await createServerSupabaseClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Not authenticated." };
+  }
+
+  const { error } = await supabaseAdmin
+    .from("creators")
+    .update({ avatar_url: url, updated_at: new Date().toISOString() })
+    .eq("auth_id", user.id);
+
+  if (error) {
+    return { error: "Failed to update avatar." };
+  }
+
+  revalidatePath("/directory");
+  return { success: true };
+}
