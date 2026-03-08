@@ -102,6 +102,11 @@ export default function Scene1Arrival() {
   const scrollPromptRef = useRef<HTMLDivElement>(null);
 
   const sampleText = useCallback((w: number, h: number) => {
+    // Read the actual font-family names set by next/font on the html element
+    const styles = getComputedStyle(document.documentElement);
+    const displayFont = styles.getPropertyValue("--font-display").trim() || '"Changa One"';
+    const monoFont = styles.getPropertyValue("--font-mono").trim() || '"IBM Plex Mono"';
+
     const off = document.createElement("canvas");
     off.width = w;
     off.height = h;
@@ -111,26 +116,25 @@ export default function Scene1Arrival() {
     c.textAlign = "center";
 
     const s1 = Math.min(w / 7, 150);
-    c.font = `400 ${s1}px "Changa One"`;
+    c.font = `400 ${s1}px ${displayFont}`;
 
     const m1 = c.measureText("CREATOR SPACE");
     const textH1 = m1.actualBoundingBoxAscent + m1.actualBoundingBoxDescent;
 
     const s2 = s1 * 0.40;
-    c.font = `400 ${s2}px "IBM Plex Mono"`;
+    c.font = `400 ${s2}px ${monoFont}`;
     const m2 = c.measureText("FORT WAYNE");
     const textH2 = m2.actualBoundingBoxAscent + m2.actualBoundingBoxDescent;
 
     const lineGap = s1 * 0.3;
     const totalH = textH1 + lineGap + textH2;
-    // Shift text up slightly so descenders aren't clipped
     const startY = (h - totalH) / 2 - s1 * 0.05;
 
-    c.font = `400 ${s1}px "Changa One"`;
+    c.font = `400 ${s1}px ${displayFont}`;
     c.textBaseline = "top";
     c.fillText("CREATOR SPACE", w / 2, startY);
 
-    c.font = `400 ${s2}px "IBM Plex Mono"`;
+    c.font = `400 ${s2}px ${monoFont}`;
     c.textBaseline = "top";
     c.fillText("FORT WAYNE", w / 2, startY + textH1 + lineGap);
 
@@ -209,17 +213,25 @@ export default function Scene1Arrival() {
       }, 3500);
     };
 
-    const fontReady = () =>
-      Promise.all([
-        document.fonts.load('400 48px "Changa One"'),
-        document.fonts.load('400 16px "IBM Plex Mono"'),
-      ]);
+    // Wait for next/font self-hosted fonts to be fully loaded
+    const fontReady = async () => {
+      await document.fonts.ready;
+      // Poll until the display font is actually usable (up to 3s)
+      const displayFont = getComputedStyle(document.documentElement).getPropertyValue("--font-display").trim();
+      if (displayFont) {
+        let attempts = 0;
+        while (!document.fonts.check(`400 48px ${displayFont}`) && attempts < 30) {
+          await new Promise((r) => setTimeout(r, 100));
+          attempts++;
+        }
+      }
+    };
 
     fontReady().then(() => {
       init();
       if (particles.current.length === 0) {
-        // Canvas text sampling failed — retry once after a short delay
-        setTimeout(() => fontReady().then(() => { init(); trigger(); }), 500);
+        // Retry — font may still be rendering
+        setTimeout(() => { init(); if (particles.current.length > 0) trigger(); }, 500);
       } else {
         setTimeout(trigger, 2000);
       }

@@ -23,9 +23,7 @@
   --color-mist: #cccccc;
   --color-white: #fafafa;
 
-  /* ── Fonts ── */
-  --font-display: "Changa One", cursive;
-  --font-mono: "IBM Plex Mono", monospace;
+  /* Fonts are set by next/font via CSS variables --font-display and --font-mono */
 }
 
 /* ── Base ── */
