@@ -424,6 +424,23 @@ export default function Scene1Arrival() {
               style={{ animation: "pixel-pulse 2s ease-in-out infinite" }}
             />
           </div>
+          {/* HTML text fallback — always visible behind transparent canvas */}
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+            <div className="text-center">
+              <h1
+                className="font-[family-name:var(--font-display)] text-white"
+                style={{ fontSize: "min(calc(100vw / 7), 150px)", lineHeight: 1.1 }}
+              >
+                CREATOR SPACE
+              </h1>
+              <p
+                className="font-[family-name:var(--font-mono)] text-white"
+                style={{ fontSize: "min(calc(100vw / 17.5), 60px)", lineHeight: 1.2, marginTop: "0.3em" }}
+              >
+                FORT WAYNE
+              </p>
+            </div>
+          </div>
           <canvas ref={canvasRef} className="absolute inset-0" />
         </div>
 
