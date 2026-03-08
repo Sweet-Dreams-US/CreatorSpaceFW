@@ -52,7 +52,7 @@ export default function Scene3Landing() {
     <section
       id="scene-landing"
       ref={sectionRef}
-      className="relative z-10 flex items-center justify-center overflow-hidden bg-[var(--color-black)] py-24 sm:py-32"
+      className="relative z-10 flex items-center justify-center overflow-x-hidden bg-[var(--color-black)] py-24 sm:py-32"
       style={{ marginTop: "-50vh" }}
     >
       {/* Violet animated gradient */}
