@@ -102,11 +102,6 @@ export default function Scene1Arrival() {
   const scrollPromptRef = useRef<HTMLDivElement>(null);
 
   const sampleText = useCallback((w: number, h: number) => {
-    // Read the actual font-family names set by next/font on the html element
-    const styles = getComputedStyle(document.documentElement);
-    const displayFont = styles.getPropertyValue("--font-display").trim() || '"Changa One"';
-    const monoFont = styles.getPropertyValue("--font-mono").trim() || '"IBM Plex Mono"';
-
     const off = document.createElement("canvas");
     off.width = w;
     off.height = h;
@@ -114,22 +109,22 @@ export default function Scene1Arrival() {
 
     c.fillStyle = "#fff";
     c.textAlign = "center";
-    // Use "middle" baseline throughout — avoids em-square vs glyph mismatch
     c.textBaseline = "middle";
 
     const s1 = Math.min(w / 7, 150);
     const s2 = s1 * 0.40;
-    const gap = s1 * 0.35;
+    const lineGap = s1 * 0.35;
 
     // Position both lines centered in the canvas
-    // "CREATOR SPACE" centered above midpoint, "FORT WAYNE" below
-    const line1Y = h / 2 - gap / 2 - s2 * 0.3;
-    const line2Y = h / 2 + s1 * 0.45 + gap / 2;
+    const line1Y = h / 2 - lineGap / 2 - s2 * 0.3;
+    const line2Y = h / 2 + s1 * 0.45 + lineGap / 2;
 
-    c.font = `400 ${s1}px ${displayFont}`;
+    // Use font names matching the @font-face declarations from next/font
+    // (canvas font setter silently fails if the string format is unexpected)
+    c.font = `400 ${s1}px "Changa One"`;
     c.fillText("CREATOR SPACE", w / 2, line1Y);
 
-    c.font = `400 ${s2}px ${monoFont}`;
+    c.font = `400 ${s2}px "IBM Plex Mono"`;
     c.fillText("FORT WAYNE", w / 2, line2Y);
 
     const data = c.getImageData(0, 0, w, h).data;
