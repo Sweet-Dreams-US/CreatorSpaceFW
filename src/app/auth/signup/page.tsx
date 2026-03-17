@@ -1,12 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase";
 import { claimOrCreateCreator } from "@/app/actions/auth";
 
 export default function SignupPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="flex min-h-screen items-center justify-center bg-[var(--color-black)]">
+          <div className="font-[family-name:var(--font-mono)] text-[var(--color-smoke)]">Loading...</div>
+        </main>
+      }
+    >
+      <SignupForm />
+    </Suspense>
+  );
+}
+
+function SignupForm() {
   const searchParams = useSearchParams();
   const prefillEmail = searchParams.get("email") || "";
   const inviteToken = searchParams.get("token") || undefined;
