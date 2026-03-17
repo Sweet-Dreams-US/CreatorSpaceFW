@@ -4,8 +4,9 @@ import { useEffect, useRef } from "react";
 import { gsap, ScrollTrigger } from "@/lib/gsap";
 
 const COLORS = ["#fa9277", "#9dfa77", "#77dffa", "#d377fa", "#ffece1"];
-const STAR_COUNT = 400;
-const EDGE_DIST = 200;
+const IS_MOBILE = typeof window !== "undefined" && window.innerWidth < 768;
+const STAR_COUNT = IS_MOBILE ? 280 : 400;
+const EDGE_DIST = IS_MOBILE ? 150 : 200;
 const GRID_CELL = EDGE_DIST;
 
 interface Star {
