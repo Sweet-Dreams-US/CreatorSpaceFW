@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { createClient } from "@/lib/supabase";
 import { updateProfile } from "@/app/actions/profile";
 import { logoutAction } from "@/app/actions/auth";
+import { getCreatorProjects } from "@/app/actions/projects";
 import AvatarUpload from "@/components/ui/AvatarUpload";
+import ProjectEditor, { type Project } from "@/components/ui/ProjectEditor";
 import Link from "next/link";
 
 const SKILL_OPTIONS = [
@@ -44,6 +46,8 @@ export default function ProfileEditPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [profile, setProfile] = useState<CreatorProfile | null>(null);
+  const [creatorId, setCreatorId] = useState<string | null>(null);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
@@ -65,12 +69,13 @@ export default function ProfileEditPage() {
       const { data } = await supabase
         .from("creators")
         .select(
-          "first_name, last_name, company, job_title, social, website, bio, skills, avatar_url, slug"
+          "id, first_name, last_name, company, job_title, social, website, bio, skills, avatar_url, slug"
         )
         .eq("auth_id", user!.id)
         .single();
 
       if (data) {
+        setCreatorId(data.id);
         setProfile(data);
         if (data.skills) {
           setSelectedSkills(
@@ -80,6 +85,9 @@ export default function ProfileEditPage() {
               .filter(Boolean)
           );
         }
+        // Load projects
+        const projectData = await getCreatorProjects(data.id);
+        setProjects(projectData as Project[]);
       }
       setLoading(false);
     }
@@ -100,6 +108,12 @@ export default function ProfileEditPage() {
     document.addEventListener("mousedown", onClick);
     return () => document.removeEventListener("mousedown", onClick);
   }, [dropdownOpen]);
+
+  const loadProjects = useCallback(async () => {
+    if (!creatorId) return;
+    const projectData = await getCreatorProjects(creatorId);
+    setProjects(projectData as Project[]);
+  }, [creatorId]);
 
   function toggleSkill(skill: string) {
     setSelectedSkills((prev) => {
@@ -349,6 +363,17 @@ export default function ProfileEditPage() {
             {saving ? "SAVING..." : "SAVE PROFILE"}
           </button>
         </form>
+
+        {/* Projects Section */}
+        {creatorId && (
+          <div className="mt-12 border-t border-[var(--color-ash)] pt-10">
+            <ProjectEditor
+              userId={user!.id}
+              projects={projects}
+              onUpdate={loadProjects}
+            />
+          </div>
+        )}
       </div>
     </main>
   );

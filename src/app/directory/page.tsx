@@ -56,6 +56,7 @@ export default function DirectoryPage() {
   const { user, loading: authLoading } = useAuth();
   const [creators, setCreators] = useState<Creator[]>([]);
   const [filter, setFilter] = useState("All");
+  const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
 
   const userIsAdmin = !authLoading && !!user && isAdmin(user.email);
@@ -99,12 +100,19 @@ export default function DirectoryPage() {
     return ["All", ...rest];
   }, [creators]);
 
-  const filtered =
-    filter === "All"
-      ? creators
-      : creators.filter((c) =>
-          c.skills.toLowerCase().includes(filter.toLowerCase())
-        );
+  const filtered = creators.filter((c) => {
+    const matchesFilter =
+      filter === "All" ||
+      c.skills.toLowerCase().includes(filter.toLowerCase());
+
+    const matchesSearch =
+      !search ||
+      `${c.first_name} ${c.last_name} ${c.company || ""} ${c.job_title || ""} ${c.skills}`
+        .toLowerCase()
+        .includes(search.toLowerCase());
+
+    return matchesFilter && matchesSearch;
+  });
 
   return (
     <main className="min-h-screen bg-[var(--color-black)] px-6 py-16">
@@ -136,8 +144,19 @@ export default function DirectoryPage() {
           Every creator in the community.
         </p>
 
+        {/* Search */}
+        <div className="mt-8">
+          <input
+            type="text"
+            placeholder="Search by name, company, skills..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full rounded-lg border border-[var(--color-ash)] bg-[var(--color-dark)] px-5 py-3 font-[family-name:var(--font-mono)] text-sm text-[var(--color-white)] outline-none placeholder:text-[var(--color-smoke)] transition-colors focus:border-[var(--color-coral)]"
+          />
+        </div>
+
         {/* Filter pills */}
-        <div className="mt-8 flex flex-wrap gap-2">
+        <div className="mt-4 flex flex-wrap gap-2">
           {sortedCategories.map((cat) => (
             <button
               key={cat}

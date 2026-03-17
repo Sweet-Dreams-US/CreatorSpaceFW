@@ -19,8 +19,8 @@ const ibmPlexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Creator Space Fort Wayne — Design System",
-  description: "Design system and style guide for Creator Space Fort Wayne",
+  title: "Creator Space Fort Wayne",
+  description: "A community directory for Fort Wayne creators — videographers, photographers, designers, musicians, developers, and more.",
 };
 
 export default function RootLayout({

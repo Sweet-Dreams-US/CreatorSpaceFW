@@ -1,12 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase";
 import { claimOrCreateCreator } from "@/app/actions/auth";
 
 export default function SignupPage() {
+  const searchParams = useSearchParams();
+  const prefillEmail = searchParams.get("email") || "";
+  const inviteToken = searchParams.get("token") || undefined;
+
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [checkEmail, setCheckEmail] = useState(false);
@@ -63,6 +67,7 @@ export default function SignupPage() {
       firstName,
       lastName,
       email,
+      inviteToken,
     });
 
     if (result.error) {
@@ -99,7 +104,9 @@ export default function SignupPage() {
           SIGN UP
         </h1>
         <p className="mt-2 font-[family-name:var(--font-mono)] text-sm text-[var(--color-mist)]">
-          Create your Creator Space account.
+          {inviteToken
+            ? "Claim your Creator Space profile."
+            : "Create your Creator Space account."}
         </p>
 
         {checkEmail ? (
@@ -132,6 +139,7 @@ export default function SignupPage() {
               type="email"
               placeholder="Email *"
               required
+              defaultValue={prefillEmail}
               className={inputClass}
             />
             <input
@@ -154,7 +162,7 @@ export default function SignupPage() {
               disabled={loading}
               className="w-full rounded-full bg-[var(--color-coral)] px-8 py-3.5 font-[family-name:var(--font-mono)] text-sm font-semibold text-[var(--color-black)] transition-all duration-300 hover:scale-105 hover:shadow-[0_0_24px_#fa927740] disabled:opacity-50 disabled:hover:scale-100"
             >
-              {loading ? "CREATING ACCOUNT..." : "SIGN UP"}
+              {loading ? "CREATING ACCOUNT..." : inviteToken ? "CLAIM YOUR PROFILE" : "SIGN UP"}
             </button>
           </form>
         )}

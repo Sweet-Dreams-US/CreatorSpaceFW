@@ -1,0 +1,97 @@
+import { NextRequest, NextResponse } from "next/server";
+import { createServerSupabaseClient, supabaseAdmin } from "@/lib/supabase-server";
+import { isAdmin } from "@/lib/admin";
+import { sendAnnouncementEmail } from "@/lib/email";
+
+export async function GET() {
+  const supabase = await createServerSupabaseClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user || !isAdmin(user.email)) {
+    return NextResponse.json({ error: "Not authorized" }, { status: 403 });
+  }
+
+  const { data } = await supabaseAdmin
+    .from("announcements")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(20);
+
+  return NextResponse.json(data || []);
+}
+
+export async function POST(req: NextRequest) {
+  const supabase = await createServerSupabaseClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user || !isAdmin(user.email)) {
+    return NextResponse.json({ error: "Not authorized" }, { status: 403 });
+  }
+
+  const { subject, body, audience } = await req.json();
+
+  if (!subject || !body) {
+    return NextResponse.json({ error: "Subject and body required" }, { status: 400 });
+  }
+
+  // Build query based on audience
+  let query = supabaseAdmin
+    .from("creators")
+    .select("id, first_name, email, claimed");
+
+  if (audience === "claimed") {
+    query = query.eq("claimed", true);
+  } else if (audience === "unclaimed") {
+    query = query.eq("claimed", false);
+  }
+
+  const { data: creators } = await query;
+
+  if (!creators || creators.length === 0) {
+    return NextResponse.json({ error: "No recipients found" }, { status: 404 });
+  }
+
+  // Filter to valid emails
+  const recipients = creators.filter(
+    (c) => c.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(c.email)
+  );
+
+  let sent = 0;
+  let failed = 0;
+
+  // Send in batches
+  const batchSize = 10;
+  for (let i = 0; i < recipients.length; i += batchSize) {
+    const batch = recipients.slice(i, i + batchSize);
+
+    const results = await Promise.allSettled(
+      batch.map((creator) =>
+        sendAnnouncementEmail(
+          creator.email!,
+          creator.first_name || "Creator",
+          subject,
+          body
+        )
+      )
+    );
+
+    for (const result of results) {
+      if (result.status === "fulfilled") sent++;
+      else failed++;
+    }
+  }
+
+  // Log the announcement
+  await supabaseAdmin.from("announcements").insert({
+    subject,
+    body,
+    sent_by: user.id,
+    sent_to: sent,
+  });
+
+  return NextResponse.json({ success: true, sent, failed });
+}

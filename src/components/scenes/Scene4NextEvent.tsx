@@ -5,14 +5,35 @@ import { gsap, ScrollTrigger } from "@/lib/gsap";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { rsvpToEvent, checkRsvp } from "@/app/actions/rsvp";
 
-// Current event config — update this for each new event
-const CURRENT_EVENT = {
+// Fallback event if no DB event is found
+const FALLBACK_EVENT = {
   id: "2026-03",
   title: "MEETUP #2",
   date: "MARCH 26TH",
   time: "6:00 PM",
   venue: "CINEMA CENTER",
 };
+
+interface EventFromDB {
+  id: string;
+  title: string;
+  date: string;
+  location: string | null;
+}
+
+function formatEventFromDB(event: EventFromDB) {
+  const d = new Date(event.date);
+  const months = ["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"];
+  const day = d.getDate();
+  const suffix = day === 1 || day === 21 || day === 31 ? "ST" : day === 2 || day === 22 ? "ND" : day === 3 || day === 23 ? "RD" : "TH";
+  return {
+    id: event.id,
+    title: event.title.toUpperCase(),
+    date: `${months[d.getMonth()]} ${day}${suffix}`,
+    time: d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }).toUpperCase(),
+    venue: (event.location || "TBD").toUpperCase(),
+  };
+}
 
 // Seeded PRNG for deterministic rendering
 function seededRandom(seed: number) {
@@ -36,7 +57,9 @@ const CONFETTI = Array.from({ length: 30 }, () => ({
   rotation: _r() * 360,
 }));
 
-export default function Scene4NextEvent() {
+export default function Scene4NextEvent({ dbEvent }: { dbEvent?: EventFromDB | null }) {
+  const event = dbEvent ? formatEventFromDB(dbEvent) : FALLBACK_EVENT;
+
   const sectionRef = useRef<HTMLDivElement>(null);
   const leftCurtain = useRef<HTMLDivElement>(null);
   const rightCurtain = useRef<HTMLDivElement>(null);
@@ -51,10 +74,10 @@ export default function Scene4NextEvent() {
   // Check if user already RSVP'd
   useEffect(() => {
     if (!user) return;
-    checkRsvp(user.id, CURRENT_EVENT.id).then(({ hasRsvpd }) => {
+    checkRsvp(user.id, event.id).then(({ hasRsvpd }) => {
       if (hasRsvpd) setRsvpState("already");
     });
-  }, [user]);
+  }, [user, event.id]);
 
   const handleRsvp = useCallback(async () => {
     if (!user) {
@@ -63,7 +86,7 @@ export default function Scene4NextEvent() {
     }
 
     setRsvpState("loading");
-    const result = await rsvpToEvent(user.id, CURRENT_EVENT.id);
+    const result = await rsvpToEvent(user.id, event.id);
 
     if (result.success) {
       setRsvpState(result.alreadyRsvpd ? "already" : "done");
@@ -178,24 +201,24 @@ export default function Scene4NextEvent() {
         </p>
 
         <h2 className="event-reveal mt-4 font-[family-name:var(--font-display)] text-6xl text-[var(--color-black)] sm:text-8xl md:text-9xl">
-          {CURRENT_EVENT.title}
+          {event.title}
         </h2>
 
         <div className="event-reveal mx-auto mt-4 h-px w-24 bg-[var(--color-black)]/20" />
 
         <div className="mt-6 space-y-2 font-[family-name:var(--font-mono)]">
           <p className="event-reveal text-3xl text-[var(--color-black)] sm:text-4xl">
-            {CURRENT_EVENT.date}
+            {event.date}
           </p>
           <p className="event-reveal text-xl text-[var(--color-black)]/70">
-            {CURRENT_EVENT.time}
+            {event.time}
           </p>
           <p
             className="event-reveal cursor-pointer text-lg text-[var(--color-black)]/50 transition-colors hover:text-[var(--color-black)]"
             onMouseEnter={() => setReelSpin(true)}
             onMouseLeave={() => setReelSpin(false)}
           >
-            {CURRENT_EVENT.venue}{" "}
+            {event.venue}{" "}
             <span
               className="inline-block transition-transform duration-700"
               style={{ transform: reelSpin ? "rotate(720deg)" : "rotate(0)" }}
