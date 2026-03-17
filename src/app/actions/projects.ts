@@ -269,7 +269,3 @@ function normalizeYoutubeUrl(url: string): string {
   return cleaned;
 }
 
-export function getYoutubeEmbedUrl(idOrUrl: string): string {
-  const id = normalizeYoutubeUrl(idOrUrl);
-  return `https://www.youtube.com/embed/${id}`;
-}
