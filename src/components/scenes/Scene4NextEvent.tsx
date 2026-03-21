@@ -7,11 +7,11 @@ import { rsvpToEvent, checkRsvp } from "@/app/actions/rsvp";
 
 // Fallback event if no DB event is found
 const FALLBACK_EVENT = {
-  id: "2026-03",
-  title: "MEETUP #2",
-  date: "MARCH 26TH",
-  time: "6:00 PM",
-  venue: "CINEMA CENTER",
+  id: "2026-04",
+  title: "3 YEAR BASH",
+  date: "APRIL 11TH",
+  time: "TBD",
+  venue: "THE VENUE @ CHARLIE'S PLACE",
 };
 
 interface EventFromDB {
@@ -228,7 +228,7 @@ export default function Scene4NextEvent({ dbEvent }: { dbEvent?: EventFromDB | n
           </p>
         </div>
 
-        <div className="event-reveal mt-10">
+        <div className="event-reveal mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
           <button
             onClick={handleRsvp}
             disabled={rsvpDisabled}
@@ -241,10 +241,18 @@ export default function Scene4NextEvent({ dbEvent }: { dbEvent?: EventFromDB | n
           >
             {rsvpLabel()}
           </button>
+          <a
+            href="https://www.facebook.com/CreatorSpaceFW/events"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="rounded-full border-2 border-[var(--color-black)]/40 px-10 py-5 font-[family-name:var(--font-display)] text-lg text-[var(--color-black)]/70 transition-all duration-500 hover:border-[var(--color-black)] hover:text-[var(--color-black)]"
+          >
+            EVENT DETAILS →
+          </a>
         </div>
 
-        <p className="event-reveal mt-4 font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-widest text-[var(--color-black)]/30">
-          Free admission · Limited seating
+        <p className="event-reveal mt-4 font-[family-name:var(--font-mono)] text-sm font-bold uppercase tracking-widest text-[var(--color-black)]/60">
+          Free Admission
         </p>
       </div>
     </section>

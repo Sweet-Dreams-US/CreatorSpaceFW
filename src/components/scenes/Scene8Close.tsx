@@ -97,7 +97,7 @@ export default function Scene8Close() {
         </p>
 
         <p className="close-fade mt-8 font-[family-name:var(--font-mono)] text-xs tracking-[0.25em] text-[var(--color-smoke)]">
-          CINEMA CENTER • EVERY MONTH • ALWAYS FREE
+          FORT WAYNE · ALWAYS FREE
         </p>
       </div>
 

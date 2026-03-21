@@ -214,12 +214,15 @@ export default function Scene6Constellation() {
           <br />A CONSTELLATION.
         </p>
         <div className="mt-10">
-          <p className="font-[family-name:var(--font-mono)] text-xs uppercase tracking-widest text-[var(--color-smoke)]">
+          <p className="font-[family-name:var(--font-mono)] text-sm font-bold uppercase tracking-widest text-[var(--color-mist)]">
             Find Your Collaborators
           </p>
-          <button className="mt-4 rounded-full border border-[var(--color-white)] px-8 py-3 font-[family-name:var(--font-display)] text-sm text-[var(--color-white)] transition-all duration-300 hover:bg-[var(--color-white)] hover:text-[var(--color-black)]">
+          <a
+            href="/directory"
+            className="mt-4 inline-block rounded-full border border-[var(--color-white)] px-8 py-3 font-[family-name:var(--font-display)] text-sm text-[var(--color-white)] transition-all duration-300 hover:bg-[var(--color-white)] hover:text-[var(--color-black)]"
+          >
             Explore the Network →
-          </button>
+          </a>
         </div>
       </div>
     </section>
