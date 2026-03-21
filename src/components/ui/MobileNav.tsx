@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useAuth } from "@/components/providers/AuthProvider";
+import { isAdmin } from "@/lib/admin";
 
 const SCENES = [
   { id: "scene-arrival", label: "Home" },
@@ -11,14 +13,17 @@ const SCENES = [
   { id: "scene-close", label: "Contact" },
 ];
 
-const PAGES = [
-  { label: "Creator Directory", href: "/directory" },
-  { label: "Design System", href: "/design-system" },
-];
-
 export default function MobileNav() {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
+  const { user } = useAuth();
+  const userIsAdmin = !!user && isAdmin(user.email);
+
+  const PAGES = [
+    { label: "Creator Directory", href: "/directory" },
+    ...(userIsAdmin ? [{ label: "Admin Dashboard", href: "/admin" }] : []),
+    ...(user ? [{ label: "My Profile", href: "/profile/edit" }] : []),
+  ];
 
   // Track active section
   useEffect(() => {

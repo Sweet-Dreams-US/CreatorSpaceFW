@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useAuth } from "@/components/providers/AuthProvider";
+import { isAdmin } from "@/lib/admin";
 
 const SCENES = [
   { id: "scene-arrival", label: "Arrival" },
@@ -14,6 +16,8 @@ const SCENES = [
 export default function FloatingNav() {
   const [active, setActive] = useState(0);
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+  const { user } = useAuth();
+  const userIsAdmin = !!user && isAdmin(user.email);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -37,6 +41,27 @@ export default function FloatingNav() {
   }, []);
 
   return (
+    <>
+    {/* Top-left auth links */}
+    <div className="fixed left-5 top-4 z-[100] hidden items-center gap-4 md:flex">
+      <a href="/directory" className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-widest text-[var(--color-smoke)] transition-colors hover:text-[var(--color-white)]">
+        Directory
+      </a>
+      {userIsAdmin && (
+        <a href="/admin" className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-widest text-[var(--color-coral)] transition-colors hover:text-[var(--color-white)]">
+          Admin
+        </a>
+      )}
+      {user ? (
+        <a href="/profile/edit" className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-widest text-[var(--color-smoke)] transition-colors hover:text-[var(--color-white)]">
+          Profile
+        </a>
+      ) : (
+        <a href="/auth/login" className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-widest text-[var(--color-smoke)] transition-colors hover:text-[var(--color-white)]">
+          Sign In
+        </a>
+      )}
+    </div>
     <nav
       className="fixed right-4 top-1/2 z-[100] hidden -translate-y-1/2 md:block"
       aria-label="Section navigation"
@@ -75,5 +100,6 @@ export default function FloatingNav() {
         ))}
       </div>
     </nav>
+    </>
   );
 }
