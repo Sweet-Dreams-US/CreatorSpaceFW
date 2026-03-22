@@ -51,11 +51,13 @@ export default function AdminInvitesPage() {
         body: JSON.stringify({ creatorIds: [creatorId] }),
       });
       const data = await res.json();
-      if (data.success) {
-        setMessage(`Invite sent successfully.`);
+      if (data.success && data.sent > 0) {
+        setMessage(`Invite sent successfully!`);
         loadCreators();
+      } else if (data.success && data.failed > 0) {
+        setMessage(`Failed to send: ${data.firstError || "Unknown error"}`);
       } else {
-        setMessage(`Failed: ${data.error || "Unknown error"}`);
+        setMessage(`Failed: ${data.error || data.firstError || "Unknown error"}`);
       }
     } catch {
       setMessage("Network error sending invite.");
@@ -79,7 +81,8 @@ export default function AdminInvitesPage() {
       const data = await res.json();
       if (data.success) {
         setProgress({ sent: data.sent, failed: data.failed, total: notYetInvited.length });
-        setMessage(`Sent ${data.sent} invites. ${data.failed} failed.`);
+        const failMsg = data.failed > 0 ? ` ${data.failed} failed: ${data.firstError || "unknown error"}` : "";
+        setMessage(`Sent ${data.sent} invites.${failMsg}`);
         loadCreators();
       } else {
         setMessage(`Failed: ${data.error}`);

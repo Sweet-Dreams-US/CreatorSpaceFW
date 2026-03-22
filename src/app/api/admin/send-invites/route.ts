@@ -33,6 +33,7 @@ export async function POST(req: NextRequest) {
 
   let sent = 0;
   let failed = 0;
+  let firstError: string | null = null;
 
   // Send in batches of 10 to respect rate limits
   const batchSize = 10;
@@ -42,14 +43,20 @@ export async function POST(req: NextRequest) {
     const results = await Promise.allSettled(
       batch.map(async (creator) => {
         if (!creator.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(creator.email)) {
-          throw new Error("Invalid email");
+          throw new Error(`Invalid email: ${creator.email}`);
         }
 
-        await sendInviteEmail(
+        const result = await sendInviteEmail(
           creator.email,
           creator.first_name || "Creator",
           creator.invite_token
         );
+
+        // Resend returns { data, error } — check for error
+        const res = result as { data?: unknown; error?: { message?: string; name?: string } };
+        if (res?.error) {
+          throw new Error(res.error.message || JSON.stringify(res.error));
+        }
 
         // Update invite_sent_at
         await supabaseAdmin
@@ -60,10 +67,16 @@ export async function POST(req: NextRequest) {
     );
 
     for (const result of results) {
-      if (result.status === "fulfilled") sent++;
-      else failed++;
+      if (result.status === "fulfilled") {
+        sent++;
+      } else {
+        failed++;
+        const errMsg = result.reason?.message || String(result.reason);
+        if (!firstError) firstError = errMsg;
+        console.error("Invite email error:", errMsg);
+      }
     }
   }
 
-  return NextResponse.json({ success: true, sent, failed });
+  return NextResponse.json({ success: true, sent, failed, firstError });
 }
