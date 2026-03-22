@@ -102,15 +102,15 @@ export default function Scene8Close() {
       </div>
 
       {/* Footer */}
-      <footer className="relative z-10 bg-[var(--color-coral)] px-10 py-12 sm:px-16 md:px-24 lg:px-32">
-        {/* Single row: logo — socials — newsletter — logo */}
-        <div className="flex w-full flex-col items-center gap-8 lg:flex-row lg:items-center lg:justify-between lg:gap-6">
+      <footer className="relative z-10 overflow-hidden bg-[var(--color-coral)] px-6 py-12 sm:px-10 md:px-16">
+        {/* Top row: logo — socials — newsletter */}
+        <div className="mx-auto flex max-w-6xl flex-col items-center gap-8 lg:flex-row lg:items-center lg:justify-between lg:gap-6">
           {/* Creator Space logo — left edge */}
           <div className="close-fade shrink-0">
             <img
               src="https://eymjahxzesuoahpwzifq.supabase.co/storage/v1/object/public/Media/Logos/Creator_Space_logo_black.png"
               alt="Creator Space"
-              className="h-16 w-auto sm:h-20"
+              className="h-14 w-auto sm:h-16"
             />
           </div>
 
@@ -141,21 +141,21 @@ export default function Scene8Close() {
           </div>
 
           {/* Newsletter */}
-          <div className="close-fade flex shrink-0 items-center gap-3">
-            <p className="font-[family-name:var(--font-mono)] text-sm uppercase tracking-widest text-[var(--color-black)]/70">
+          <div className="close-fade flex min-w-0 shrink items-center gap-3">
+            <p className="hidden font-[family-name:var(--font-mono)] text-sm uppercase tracking-widest text-[var(--color-black)]/70 sm:block">
               Stay in the loop
             </p>
             <input
               type="email"
               placeholder="your@email.com"
-              className="w-56 border-b-2 border-[var(--color-black)]/30 bg-transparent px-2 py-3 font-[family-name:var(--font-mono)] text-sm text-[var(--color-black)] outline-none placeholder:text-[var(--color-black)]/40 focus:border-[var(--color-black)]"
+              className="w-40 min-w-0 border-b-2 border-[var(--color-black)]/30 bg-transparent px-2 py-3 font-[family-name:var(--font-mono)] text-sm text-[var(--color-black)] outline-none placeholder:text-[var(--color-black)]/40 focus:border-[var(--color-black)] sm:w-48"
             />
-            <button className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--color-black)] text-sm text-[var(--color-coral)] transition-transform hover:scale-110">
+            <button className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--color-black)] text-sm text-[var(--color-coral)] transition-transform hover:scale-110">
               →
             </button>
           </div>
 
-          {/* Created by Sweet Dreams — right edge */}
+          {/* Created by Sweet Dreams */}
           <div className="close-fade flex shrink-0 items-center gap-3">
             <span className="font-[family-name:var(--font-mono)] text-xs uppercase tracking-widest text-[var(--color-black)]/50">
               Created by:
@@ -168,7 +168,7 @@ export default function Scene8Close() {
               <img
                 src="https://eymjahxzesuoahpwzifq.supabase.co/storage/v1/object/public/Media/Logos/SweetDreamsUSlogowide.png"
                 alt="Sweet Dreams"
-                className="h-14 w-auto transition-opacity hover:opacity-80 sm:h-16"
+                className="h-10 w-auto transition-opacity hover:opacity-80 sm:h-12"
               />
             </a>
           </div>
