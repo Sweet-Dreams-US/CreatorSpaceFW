@@ -4,32 +4,46 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase";
+import PasswordInput from "@/components/ui/PasswordInput";
 
 export default function ResetPasswordPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [ready, setReady] = useState(false);
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
   const router = useRouter();
 
   useEffect(() => {
-    // Supabase injects the access token via hash fragment after clicking the reset link
-    // The client library handles the exchange automatically
     const supabase = createClient();
-    supabase.auth.onAuthStateChange((event) => {
-      if (event === "PASSWORD_RECOVERY") {
+
+    // Check if we already have a session (user clicked recovery link)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) setReady(true);
+    });
+
+    // Also listen for the PASSWORD_RECOVERY event
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "PASSWORD_RECOVERY" || event === "SIGNED_IN") {
         setReady(true);
       }
     });
+
+    // Fallback — if nothing fires in 3s, let them try anyway
+    const timeout = setTimeout(() => setReady(true), 3000);
+
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(timeout);
+    };
   }, []);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
     setError("");
-
-    const formData = new FormData(e.currentTarget);
-    const password = formData.get("password") as string;
-    const confirm = formData.get("confirm") as string;
 
     if (!password || password.length < 6) {
       setError("Password must be at least 6 characters.");
@@ -55,8 +69,12 @@ export default function ResetPasswordPage() {
     router.push("/profile/edit");
   }
 
-  const inputClass =
-    "w-full border-b border-[var(--color-smoke)] bg-transparent px-2 py-3 font-[family-name:var(--font-mono)] text-base text-[var(--color-white)] outline-none placeholder:text-[var(--color-smoke)] focus:border-[var(--color-coral)] transition-colors";
+  const match =
+    confirm.length > 0 && password === confirm
+      ? true
+      : confirm.length > 0
+        ? false
+        : null;
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-[var(--color-black)] px-6">
@@ -74,26 +92,44 @@ export default function ResetPasswordPage() {
         <p className="mt-2 font-[family-name:var(--font-mono)] text-sm text-[var(--color-mist)]">
           {ready
             ? "Choose your new password."
-            : "Loading your reset session..."}
+            : "Verifying your reset link..."}
         </p>
 
-        <form onSubmit={handleSubmit} className="mt-8 space-y-6">
-          <input
+        {!ready && (
+          <div className="mt-8 flex justify-center">
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--color-smoke)] border-t-[var(--color-coral)]" />
+          </div>
+        )}
+
+        <form
+          onSubmit={handleSubmit}
+          className="mt-8 space-y-6"
+          style={{ opacity: ready ? 1 : 0.4, pointerEvents: ready ? "auto" : "none" }}
+        >
+          <PasswordInput
             name="password"
-            type="password"
             placeholder="New Password * (min 6 chars)"
-            required
-            minLength={6}
-            className={inputClass}
+            showStrength
+            value={password}
+            onChange={setPassword}
           />
-          <input
-            name="confirm"
-            type="password"
-            placeholder="Confirm Password *"
-            required
-            minLength={6}
-            className={inputClass}
-          />
+
+          <div className="relative">
+            <PasswordInput
+              name="confirm"
+              placeholder="Confirm Password *"
+              value={confirm}
+              onChange={setConfirm}
+            />
+            {match !== null && (
+              <span
+                className="absolute -bottom-5 left-0 font-[family-name:var(--font-mono)] text-[10px]"
+                style={{ color: match ? "#9dfa77" : "#ef4444" }}
+              >
+                {match ? "Passwords match" : "Passwords don't match"}
+              </span>
+            )}
+          </div>
 
           {error && (
             <p className="font-[family-name:var(--font-mono)] text-sm text-red-400">

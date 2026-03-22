@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase";
+import PasswordInput from "@/components/ui/PasswordInput";
 
 export default function LoginPage() {
   const [error, setError] = useState("");
@@ -68,12 +69,9 @@ export default function LoginPage() {
             required
             className={inputClass}
           />
-          <input
+          <PasswordInput
             name="password"
-            type="password"
             placeholder="Password *"
-            required
-            className={inputClass}
           />
 
           {error && (

@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase";
 import { claimOrCreateCreator } from "@/app/actions/auth";
+import PasswordInput from "@/components/ui/PasswordInput";
 
 export default function SignupPage() {
   return (
@@ -156,13 +157,10 @@ function SignupForm() {
               defaultValue={prefillEmail}
               className={inputClass}
             />
-            <input
+            <PasswordInput
               name="password"
-              type="password"
               placeholder="Password * (min 6 chars)"
-              required
-              minLength={6}
-              className={inputClass}
+              showStrength
             />
 
             {error && (
