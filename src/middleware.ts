@@ -15,6 +15,7 @@ export async function middleware(request: NextRequest) {
     url,
     key,
     {
+      cookieEncoding: "raw",
       cookies: {
         getAll() {
           return request.cookies.getAll();
