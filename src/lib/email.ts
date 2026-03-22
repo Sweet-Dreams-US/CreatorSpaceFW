@@ -12,7 +12,7 @@ function getResend(): Resend {
 }
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://creatorspacefw.com";
-const FROM_EMAIL = process.env.FROM_EMAIL || "Creator Space FW <hello@creatorspacefw.com>";
+const FROM_EMAIL = process.env.FROM_EMAIL || "Creator Space FW <creatorspacefw@sweetdreamsmusic.com>";
 
 export async function sendInviteEmail(
   to: string,

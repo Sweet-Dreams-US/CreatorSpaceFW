@@ -60,8 +60,13 @@ export async function POST(req: NextRequest) {
     (c) => c.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(c.email)
   );
 
+  if (recipients.length === 0) {
+    return NextResponse.json({ error: `No valid email addresses found (${creators.length} creators matched audience "${audience}" but none had valid emails)` }, { status: 404 });
+  }
+
   let sent = 0;
   let failed = 0;
+  let firstError: string | null = null;
 
   // Send in batches
   const batchSize = 10;
@@ -79,18 +84,23 @@ export async function POST(req: NextRequest) {
       )
     );
 
-    const errors: string[] = [];
     for (const result of results) {
-      if (result.status === "fulfilled") sent++;
-      else {
+      if (result.status === "fulfilled") {
+        // Resend returns { data, error } — check for error in response
+        const res = result.value as { data?: unknown; error?: { message?: string } };
+        if (res?.error) {
+          failed++;
+          if (!firstError) firstError = res.error.message || JSON.stringify(res.error);
+          console.error("Resend API error:", res.error);
+        } else {
+          sent++;
+        }
+      } else {
         failed++;
-        errors.push(result.reason?.message || String(result.reason));
+        const errMsg = result.reason?.message || String(result.reason);
+        if (!firstError) firstError = errMsg;
+        console.error("Announcement email exception:", errMsg);
       }
-    }
-
-    // Log first error for debugging
-    if (errors.length > 0) {
-      console.error("Announcement email errors:", errors[0]);
     }
   }
 
@@ -102,5 +112,11 @@ export async function POST(req: NextRequest) {
     sent_to: sent,
   });
 
-  return NextResponse.json({ success: true, sent, failed, firstError: failed > 0 ? "Check server logs or Resend dashboard for details. Common issues: domain not verified in Resend, FROM_EMAIL env var not set." : null });
+  return NextResponse.json({
+    success: true,
+    sent,
+    failed,
+    totalRecipients: recipients.length,
+    firstError,
+  });
 }

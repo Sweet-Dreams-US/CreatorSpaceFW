@@ -73,8 +73,8 @@ export default function AdminAnnouncementsPage() {
       const data = await res.json();
       if (data.success) {
         const msg = data.failed > 0
-          ? `Sent to ${data.sent}, failed ${data.failed}. ${data.firstError || ""}`
-          : `Announcement sent to ${data.sent} creator(s).`;
+          ? `Sent to ${data.sent}/${data.totalRecipients}, failed ${data.failed}. Error: ${data.firstError || "unknown"}`
+          : `Announcement sent to ${data.sent} creator(s)!`;
         setMessage(msg);
         if (data.sent > 0) {
           setSubject("");
