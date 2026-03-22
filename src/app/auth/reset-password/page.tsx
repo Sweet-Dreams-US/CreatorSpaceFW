@@ -1,14 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase";
 
-export default function LoginPage() {
+export default function ResetPasswordPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [ready, setReady] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    // Supabase injects the access token via hash fragment after clicking the reset link
+    // The client library handles the exchange automatically
+    const supabase = createClient();
+    supabase.auth.onAuthStateChange((event) => {
+      if (event === "PASSWORD_RECOVERY") {
+        setReady(true);
+      }
+    });
+  }, []);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -16,20 +28,23 @@ export default function LoginPage() {
     setError("");
 
     const formData = new FormData(e.currentTarget);
-    const email = (formData.get("email") as string)?.trim();
     const password = formData.get("password") as string;
+    const confirm = formData.get("confirm") as string;
 
-    if (!email || !password) {
-      setError("Email and password are required.");
+    if (!password || password.length < 6) {
+      setError("Password must be at least 6 characters.");
+      setLoading(false);
+      return;
+    }
+
+    if (password !== confirm) {
+      setError("Passwords don't match.");
       setLoading(false);
       return;
     }
 
     const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const { error } = await supabase.auth.updateUser({ password });
 
     if (error) {
       setError(error.message);
@@ -54,25 +69,29 @@ export default function LoginPage() {
         </Link>
 
         <h1 className="mt-6 font-[family-name:var(--font-display)] text-4xl text-[var(--color-white)]">
-          LOG IN
+          NEW PASSWORD
         </h1>
         <p className="mt-2 font-[family-name:var(--font-mono)] text-sm text-[var(--color-mist)]">
-          Welcome back to Creator Space.
+          {ready
+            ? "Choose your new password."
+            : "Loading your reset session..."}
         </p>
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-6">
           <input
-            name="email"
-            type="email"
-            placeholder="Email *"
+            name="password"
+            type="password"
+            placeholder="New Password * (min 6 chars)"
             required
+            minLength={6}
             className={inputClass}
           />
           <input
-            name="password"
+            name="confirm"
             type="password"
-            placeholder="Password *"
+            placeholder="Confirm Password *"
             required
+            minLength={6}
             className={inputClass}
           />
 
@@ -82,33 +101,14 @@ export default function LoginPage() {
             </p>
           )}
 
-          <div className="text-right">
-            <Link
-              href="/auth/forgot-password"
-              className="font-[family-name:var(--font-mono)] text-xs text-[var(--color-smoke)] transition-colors hover:text-[var(--color-coral)]"
-            >
-              Forgot password?
-            </Link>
-          </div>
-
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || !ready}
             className="w-full rounded-full bg-[var(--color-coral)] px-8 py-3.5 font-[family-name:var(--font-mono)] text-sm font-semibold text-[var(--color-black)] transition-all duration-300 hover:scale-105 hover:shadow-[0_0_24px_#fa927740] disabled:opacity-50 disabled:hover:scale-100"
           >
-            {loading ? "LOGGING IN..." : "LOG IN"}
+            {loading ? "UPDATING..." : "SET NEW PASSWORD"}
           </button>
         </form>
-
-        <p className="mt-6 text-center font-[family-name:var(--font-mono)] text-sm text-[var(--color-smoke)]">
-          Don&apos;t have an account?{" "}
-          <Link
-            href="/auth/signup"
-            className="text-[var(--color-coral)] hover:underline"
-          >
-            Sign up
-          </Link>
-        </p>
       </div>
     </main>
   );
