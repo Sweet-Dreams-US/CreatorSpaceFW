@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { isAdmin } from "@/lib/admin";
+import { createClient } from "@/lib/supabase";
 
 const SCENES = [
   { id: "scene-arrival", label: "Arrival" },
@@ -18,6 +20,13 @@ export default function FloatingNav() {
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
   const { user } = useAuth();
   const userIsAdmin = !!user && isAdmin(user.email);
+  const router = useRouter();
+
+  async function handleLogout() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/");
+  }
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -53,9 +62,17 @@ export default function FloatingNav() {
         </a>
       )}
       {user ? (
-        <a href="/profile/edit" className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-widest text-[var(--color-smoke)] transition-colors hover:text-[var(--color-white)]">
-          Profile
-        </a>
+        <>
+          <a href="/profile/edit" className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-widest text-[var(--color-smoke)] transition-colors hover:text-[var(--color-white)]">
+            Profile
+          </a>
+          <button
+            onClick={handleLogout}
+            className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-widest text-[var(--color-smoke)] transition-colors hover:text-[var(--color-coral)]"
+          >
+            Log Out
+          </button>
+        </>
       ) : (
         <a href="/auth/login" className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-widest text-[var(--color-smoke)] transition-colors hover:text-[var(--color-white)]">
           Sign In

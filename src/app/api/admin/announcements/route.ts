@@ -79,9 +79,18 @@ export async function POST(req: NextRequest) {
       )
     );
 
+    const errors: string[] = [];
     for (const result of results) {
       if (result.status === "fulfilled") sent++;
-      else failed++;
+      else {
+        failed++;
+        errors.push(result.reason?.message || String(result.reason));
+      }
+    }
+
+    // Log first error for debugging
+    if (errors.length > 0) {
+      console.error("Announcement email errors:", errors[0]);
     }
   }
 
@@ -93,5 +102,5 @@ export async function POST(req: NextRequest) {
     sent_to: sent,
   });
 
-  return NextResponse.json({ success: true, sent, failed });
+  return NextResponse.json({ success: true, sent, failed, firstError: failed > 0 ? "Check server logs or Resend dashboard for details. Common issues: domain not verified in Resend, FROM_EMAIL env var not set." : null });
 }

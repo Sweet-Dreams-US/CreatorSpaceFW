@@ -4,6 +4,10 @@ import { createServerSupabaseClient, supabaseAdmin } from "@/lib/supabase-server
 import { isAdmin } from "@/lib/admin";
 import { parseSocialField, getPlatformIcon, getPlatformColor } from "@/lib/social-parser";
 import { getCreatorProjects } from "@/app/actions/projects";
+import { logProfileView } from "@/app/actions/tracking";
+import BadgeDisplay from "@/components/ui/BadgeDisplay";
+import ConnectButton from "@/components/ui/ConnectButton";
+import ShareProfile from "@/components/ui/ShareProfile";
 import type { Metadata } from "next";
 
 interface Creator {
@@ -18,6 +22,8 @@ interface Creator {
   social: string | null;
   avatar_url: string | null;
   slug: string;
+  badges: string[] | null;
+  location: string | null;
 }
 
 interface ProjectImage {
@@ -67,7 +73,7 @@ export default async function CreatorProfilePage({ params }: PageProps) {
   const { data: creator } = await supabase
     .from("creators")
     .select(
-      "id, first_name, last_name, company, job_title, skills, bio, website, social, avatar_url, slug"
+      "id, first_name, last_name, company, job_title, skills, bio, website, social, avatar_url, slug, badges, location"
     )
     .eq("slug", slug)
     .single();
@@ -76,8 +82,22 @@ export default async function CreatorProfilePage({ params }: PageProps) {
     notFound();
   }
 
+  // Track profile view (fire-and-forget, don't block render)
+  logProfileView(creator.id).catch(() => {});
+
   const { data: { user } } = await supabase.auth.getUser();
   const showAdminEdit = !!user && isAdmin(user.email);
+
+  // Get current user's creator ID for the connect button
+  let currentCreatorId: string | null = null;
+  if (user) {
+    const { data: currentCreator } = await supabase
+      .from("creators")
+      .select("id")
+      .eq("auth_id", user.id)
+      .single();
+    currentCreatorId = currentCreator?.id || null;
+  }
 
   const c = creator as Creator;
   const initials = `${c.first_name?.[0] || ""}${c.last_name?.[0] || ""}`.toUpperCase();
@@ -139,6 +159,19 @@ export default async function CreatorProfilePage({ params }: PageProps) {
             {c.first_name} {c.last_name}
           </h1>
 
+          {/* Share & Connect */}
+          <div className="mt-4 flex items-center gap-3">
+            <ConnectButton
+              targetCreatorId={c.id}
+              currentUserId={user?.id || null}
+              currentCreatorId={currentCreatorId}
+            />
+            <ShareProfile
+              creatorName={`${c.first_name} ${c.last_name}`}
+              slug={c.slug}
+            />
+          </div>
+
           {/* Company / Job Title */}
           {(c.company || c.job_title) && (
             <p className="mt-2 font-[family-name:var(--font-mono)] text-sm text-[var(--color-smoke)]">
@@ -146,6 +179,13 @@ export default async function CreatorProfilePage({ params }: PageProps) {
               {c.job_title && c.company ? " · " : ""}
               {c.company}
             </p>
+          )}
+
+          {/* Badges */}
+          {c.badges && c.badges.length > 0 && (
+            <div className="mt-4">
+              <BadgeDisplay badges={c.badges} />
+            </div>
           )}
 
           {/* Divider */}

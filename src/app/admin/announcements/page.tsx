@@ -72,9 +72,14 @@ export default function AdminAnnouncementsPage() {
       });
       const data = await res.json();
       if (data.success) {
-        setMessage(`Announcement sent to ${data.sent} creator(s).`);
-        setSubject("");
-        setBody("");
+        const msg = data.failed > 0
+          ? `Sent to ${data.sent}, failed ${data.failed}. ${data.firstError || ""}`
+          : `Announcement sent to ${data.sent} creator(s).`;
+        setMessage(msg);
+        if (data.sent > 0) {
+          setSubject("");
+          setBody("");
+        }
         loadData();
       } else {
         setMessage(`Failed: ${data.error}`);

@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { isAdmin } from "@/lib/admin";
+import { createClient } from "@/lib/supabase";
 
 const SCENES = [
   { id: "scene-arrival", label: "Home" },
@@ -18,6 +20,14 @@ export default function MobileNav() {
   const [active, setActive] = useState(0);
   const { user } = useAuth();
   const userIsAdmin = !!user && isAdmin(user.email);
+  const router = useRouter();
+
+  async function handleLogout() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    setOpen(false);
+    router.push("/");
+  }
 
   const PAGES = [
     { label: "Creator Directory", href: "/directory" },
@@ -177,6 +187,23 @@ export default function MobileNav() {
               {page.label}
             </a>
           ))}
+          {user && (
+            <button
+              onClick={handleLogout}
+              className="px-6 py-2 font-[family-name:var(--font-mono)] text-xs uppercase tracking-widest text-[var(--color-smoke)] transition-all duration-300 hover:text-[var(--color-coral)]"
+              style={{
+                transform: open
+                  ? "translateY(0)"
+                  : "translateY(20px)",
+                opacity: open ? 1 : 0,
+                transitionDelay: open
+                  ? `${(SCENES.length + 1 + PAGES.length) * 50}ms`
+                  : "0ms",
+              }}
+            >
+              Log Out
+            </button>
+          )}
         </div>
       </div>
     </div>

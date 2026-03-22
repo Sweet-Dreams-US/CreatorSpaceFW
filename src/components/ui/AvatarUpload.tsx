@@ -10,6 +10,15 @@ interface AvatarUploadProps {
   initials: string;
 }
 
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 export default function AvatarUpload({
   userId,
   currentUrl,
@@ -17,12 +26,32 @@ export default function AvatarUpload({
 }: AvatarUploadProps) {
   const [avatarUrl, setAvatarUrl] = useState(currentUrl);
   const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [fileSize, setFileSize] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    setError(null);
+    setFileSize(null);
+
+    // Validate file type
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      setError("Invalid format. Use JPEG, PNG, WebP, or GIF.");
+      e.target.value = "";
+      return;
+    }
+
+    // Validate file size
+    if (file.size > MAX_FILE_SIZE) {
+      setError(`File too large (${formatFileSize(file.size)}). Max 5 MB.`);
+      e.target.value = "";
+      return;
+    }
+
+    setFileSize(formatFileSize(file.size));
     setUploading(true);
 
     const ext = file.name.split(".").pop();
@@ -78,13 +107,23 @@ export default function AvatarUpload({
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/*"
+        accept="image/jpeg,image/png,image/webp,image/gif"
         onChange={handleUpload}
         className="hidden"
       />
+      {error && (
+        <p className="font-[family-name:var(--font-mono)] text-xs text-red-400">
+          {error}
+        </p>
+      )}
       <span className="font-[family-name:var(--font-mono)] text-xs text-[var(--color-smoke)]">
         Click to upload
       </span>
+      {fileSize && !error && (
+        <span className="font-[family-name:var(--font-mono)] text-[10px] text-[var(--color-mist)]">
+          {fileSize}
+        </span>
+      )}
     </div>
   );
 }

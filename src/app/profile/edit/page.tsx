@@ -9,6 +9,8 @@ import { logoutAction } from "@/app/actions/auth";
 import { getCreatorProjects } from "@/app/actions/projects";
 import AvatarUpload from "@/components/ui/AvatarUpload";
 import ProjectEditor, { type Project } from "@/components/ui/ProjectEditor";
+import ProfileCompleteness from "@/components/ui/ProfileCompleteness";
+import ToggleSwitch from "@/components/ui/ToggleSwitch";
 import Link from "next/link";
 
 const SKILL_OPTIONS = [
@@ -29,6 +31,18 @@ const SKILL_OPTIONS = [
 
 const MAX_SKILLS = 3;
 
+interface EmailPrefs {
+  events: boolean;
+  announcements: boolean;
+  connections: boolean;
+}
+
+const DEFAULT_EMAIL_PREFS: EmailPrefs = {
+  events: true,
+  announcements: true,
+  connections: true,
+};
+
 interface CreatorProfile {
   first_name: string;
   last_name: string;
@@ -40,6 +54,8 @@ interface CreatorProfile {
   skills: string;
   avatar_url: string | null;
   slug: string | null;
+  location: string | null;
+  email_prefs: EmailPrefs | null;
 }
 
 export default function ProfileEditPage() {
@@ -53,6 +69,7 @@ export default function ProfileEditPage() {
   const [message, setMessage] = useState("");
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [emailPrefs, setEmailPrefs] = useState<EmailPrefs>(DEFAULT_EMAIL_PREFS);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -69,7 +86,7 @@ export default function ProfileEditPage() {
       const { data } = await supabase
         .from("creators")
         .select(
-          "id, first_name, last_name, company, job_title, social, website, bio, skills, avatar_url, slug"
+          "id, first_name, last_name, company, job_title, social, website, bio, skills, avatar_url, slug, location, email_prefs"
         )
         .eq("auth_id", user!.id)
         .single();
@@ -84,6 +101,9 @@ export default function ProfileEditPage() {
               .map((s: string) => s.trim())
               .filter(Boolean)
           );
+        }
+        if (data.email_prefs) {
+          setEmailPrefs({ ...DEFAULT_EMAIL_PREFS, ...data.email_prefs });
         }
         // Load projects
         const projectData = await getCreatorProjects(data.id);
@@ -130,6 +150,7 @@ export default function ProfileEditPage() {
 
     const formData = new FormData(e.currentTarget);
     formData.set("skills", selectedSkills.join(", "));
+    formData.set("email_prefs", JSON.stringify(emailPrefs));
 
     const result = await updateProfile(formData);
     setSaving(false);
@@ -209,6 +230,10 @@ export default function ProfileEditPage() {
             </a>
           </p>
         )}
+
+        <div className="mt-8">
+          <ProfileCompleteness creator={profile} />
+        </div>
 
         <div className="mt-8">
           <AvatarUpload
@@ -341,6 +366,42 @@ export default function ProfileEditPage() {
                 })}
               </div>
             )}
+          </div>
+
+          {/* Notification Preferences */}
+          <div className="mt-4 border-t border-[var(--color-ash)] pt-6">
+            <h3 className="font-[family-name:var(--font-display)] text-lg text-[var(--color-white)]">
+              NOTIFICATION PREFERENCES
+            </h3>
+            <p className="mt-1 font-[family-name:var(--font-mono)] text-[10px] text-[var(--color-smoke)]">
+              Choose which emails you want to receive.
+            </p>
+            <div className="mt-4 space-y-1">
+              <ToggleSwitch
+                checked={emailPrefs.events}
+                onChange={(val) =>
+                  setEmailPrefs((prev) => ({ ...prev, events: val }))
+                }
+                label="Event announcements"
+                description="Get notified about upcoming community events"
+              />
+              <ToggleSwitch
+                checked={emailPrefs.announcements}
+                onChange={(val) =>
+                  setEmailPrefs((prev) => ({ ...prev, announcements: val }))
+                }
+                label="Community updates"
+                description="News and updates from Creator Space"
+              />
+              <ToggleSwitch
+                checked={emailPrefs.connections}
+                onChange={(val) =>
+                  setEmailPrefs((prev) => ({ ...prev, connections: val }))
+                }
+                label="Connection requests"
+                description="When someone wants to connect with you"
+              />
+            </div>
           </div>
 
           {message && (

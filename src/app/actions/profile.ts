@@ -21,19 +21,36 @@ export async function updateProfile(formData: FormData) {
     return { error: "First and last name are required." };
   }
 
+  // Parse email_prefs if provided
+  const emailPrefsRaw = formData.get("email_prefs") as string | null;
+  let emailPrefs = undefined;
+  if (emailPrefsRaw) {
+    try {
+      emailPrefs = JSON.parse(emailPrefsRaw);
+    } catch {
+      // Ignore malformed JSON
+    }
+  }
+
+  const updateData: Record<string, unknown> = {
+    first_name: firstName,
+    last_name: lastName,
+    company: (formData.get("company") as string)?.trim() || null,
+    job_title: (formData.get("job_title") as string)?.trim() || null,
+    social: (formData.get("social") as string)?.trim() || null,
+    website: (formData.get("website") as string)?.trim() || null,
+    bio: (formData.get("bio") as string)?.trim() || null,
+    skills: (formData.get("skills") as string)?.trim() || "",
+    updated_at: new Date().toISOString(),
+  };
+
+  if (emailPrefs !== undefined) {
+    updateData.email_prefs = emailPrefs;
+  }
+
   const { error } = await supabaseAdmin
     .from("creators")
-    .update({
-      first_name: firstName,
-      last_name: lastName,
-      company: (formData.get("company") as string)?.trim() || null,
-      job_title: (formData.get("job_title") as string)?.trim() || null,
-      social: (formData.get("social") as string)?.trim() || null,
-      website: (formData.get("website") as string)?.trim() || null,
-      bio: (formData.get("bio") as string)?.trim() || null,
-      skills: (formData.get("skills") as string)?.trim() || "",
-      updated_at: new Date().toISOString(),
-    })
+    .update(updateData)
     .eq("auth_id", user.id);
 
   if (error) {

@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { isAdmin } from "@/lib/admin";
 import AuthButton from "@/components/ui/AuthButton";
+import BadgeDisplay from "@/components/ui/BadgeDisplay";
 
 const CATEGORIES = [
   "All",
@@ -50,6 +51,7 @@ interface Creator {
   skills: string;
   slug: string | null;
   avatar_url: string | null;
+  badges: string[] | null;
 }
 
 export default function DirectoryPage() {
@@ -67,7 +69,7 @@ export default function DirectoryPage() {
       const { data } = await supabase
         .from("creators")
         .select(
-          "id, first_name, last_name, company, job_title, skills, slug, avatar_url"
+          "id, first_name, last_name, company, job_title, skills, slug, avatar_url, badges"
         )
         .order("created_at", { ascending: false });
       setCreators(data || []);
@@ -245,7 +247,7 @@ function CreatorCard({
   const initials = `${creator.first_name?.[0] || ""}${creator.last_name?.[0] || ""}`.toUpperCase();
 
   const card = (
-    <div className="relative rounded-xl border border-white/5 bg-[var(--color-dark)] p-5 transition-all duration-300 hover:border-white/10">
+    <div className="group relative rounded-xl border border-white/5 bg-[var(--color-dark)] p-5 transition-all duration-300 hover:scale-[1.02] hover:border-[var(--color-coral)] hover:shadow-[0_0_24px_rgba(250,146,119,0.12)]">
       {showEdit && (
         <Link
           href={`/profile/edit/${creator.id}`}
@@ -269,7 +271,7 @@ function CreatorCard({
             </span>
           )}
         </div>
-        <div>
+        <div className="min-w-0 flex-1">
           <p className="font-[family-name:var(--font-display)] text-lg text-[var(--color-white)]">
             {creator.first_name} {creator.last_name}
           </p>
@@ -286,16 +288,34 @@ function CreatorCard({
           )}
         </div>
       </div>
-      <div className="mt-3 flex flex-wrap gap-1.5">
-        {skillTags.map((tag) => (
-          <span
-            key={tag}
-            className="rounded-full bg-[var(--color-charcoal)] px-2.5 py-0.5 font-[family-name:var(--font-mono)] text-[10px] text-[var(--color-mist)]"
-          >
-            {tag}
-          </span>
-        ))}
+      <div className="mt-3 flex items-center gap-2">
+        <div className="flex flex-wrap gap-1.5">
+          {skillTags.map((tag, i) => (
+            <span
+              key={tag}
+              className="rounded-full bg-[var(--color-charcoal)] px-2.5 py-0.5 font-[family-name:var(--font-mono)] text-[10px] text-[var(--color-mist)] transition-all duration-300 group-hover:border-[var(--color-coral)]/20 group-hover:text-[var(--color-white)]"
+              style={{
+                transitionDelay: `${i * 50}ms`,
+              }}
+            >
+              {tag}
+            </span>
+          ))}
+        </div>
+        {creator.badges && creator.badges.length > 0 && (
+          <div className="ml-auto flex-shrink-0">
+            <BadgeDisplay badges={creator.badges} compact />
+          </div>
+        )}
       </div>
+      {/* View Profile arrow - fades in on hover */}
+      {creator.slug && (
+        <div className="mt-3 flex justify-end opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+          <span className="font-[family-name:var(--font-mono)] text-[10px] text-[var(--color-coral)]">
+            View Profile →
+          </span>
+        </div>
+      )}
     </div>
   );
 
