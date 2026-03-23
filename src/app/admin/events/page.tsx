@@ -17,6 +17,7 @@ interface Event {
   location: string | null;
   image_url: string | null;
   max_capacity: number | null;
+  facebook_url: string | null;
   created_at: string;
 }
 
@@ -206,6 +207,7 @@ function EventFormModal({
     date: event?.date ? new Date(event.date).toISOString().slice(0, 16) : "",
     location: event?.location || "",
     max_capacity: event?.max_capacity?.toString() || "",
+    facebook_url: event?.facebook_url || "",
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -227,6 +229,7 @@ function EventFormModal({
       date: new Date(data.date).toISOString(),
       location: data.location || undefined,
       max_capacity: data.max_capacity ? parseInt(data.max_capacity) : undefined,
+      facebook_url: data.facebook_url || undefined,
     };
 
     const result = event
@@ -279,6 +282,12 @@ function EventFormModal({
             placeholder="Max Capacity (optional)"
             value={data.max_capacity}
             onChange={(e) => setData({ ...data, max_capacity: e.target.value })}
+            className={inputClass}
+          />
+          <input
+            placeholder="Facebook Event URL (optional)"
+            value={data.facebook_url}
+            onChange={(e) => setData({ ...data, facebook_url: e.target.value })}
             className={inputClass}
           />
 

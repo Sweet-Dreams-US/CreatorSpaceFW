@@ -11,6 +11,7 @@ interface EventData {
   location?: string;
   image_url?: string;
   max_capacity?: number;
+  facebook_url?: string;
 }
 
 export async function createEvent(data: EventData) {
@@ -32,6 +33,7 @@ export async function createEvent(data: EventData) {
       location: data.location || null,
       image_url: data.image_url || null,
       max_capacity: data.max_capacity || null,
+      facebook_url: data.facebook_url || null,
       created_by: user.id,
     })
     .select("id")
@@ -65,6 +67,7 @@ export async function updateEvent(eventId: string, data: EventData) {
       location: data.location || null,
       image_url: data.image_url || null,
       max_capacity: data.max_capacity || null,
+      facebook_url: data.facebook_url || null,
       updated_at: new Date().toISOString(),
     })
     .eq("id", eventId);
@@ -143,7 +146,7 @@ export async function getEventAttendees(eventId: string) {
   const userIds = data.map((r) => r.user_id);
   const { data: creators } = await getSupabaseAdmin()
     .from("creators")
-    .select("id, first_name, last_name, email, avatar_url, auth_id")
+    .select("id, first_name, last_name, email, avatar_url, auth_id, slug")
     .in("auth_id", userIds);
 
   return creators || [];

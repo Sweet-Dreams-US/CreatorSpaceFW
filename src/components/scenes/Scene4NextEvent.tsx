@@ -4,6 +4,8 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { gsap, ScrollTrigger } from "@/lib/gsap";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { rsvpToEvent, checkRsvp } from "@/app/actions/rsvp";
+import { getEventAttendees } from "@/app/actions/events";
+import Link from "next/link";
 
 // Fallback event if no DB event is found
 const FALLBACK_EVENT = {
@@ -12,6 +14,7 @@ const FALLBACK_EVENT = {
   date: "APRIL 11TH",
   time: "TBD",
   venue: "THE VENUE @ CHARLIE'S PLACE",
+  facebookUrl: "https://www.facebook.com/CreatorSpaceFW/events" as string | null,
 };
 
 interface EventFromDB {
@@ -19,6 +22,15 @@ interface EventFromDB {
   title: string;
   date: string;
   location: string | null;
+  facebook_url: string | null;
+}
+
+interface Attendee {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  avatar_url: string | null;
+  slug: string | null;
 }
 
 function formatEventFromDB(event: EventFromDB) {
@@ -32,6 +44,7 @@ function formatEventFromDB(event: EventFromDB) {
     date: `${months[d.getMonth()]} ${day}${suffix}`,
     time: d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }).toUpperCase(),
     venue: (event.location || "TBD").toUpperCase(),
+    facebookUrl: event.facebook_url,
   };
 }
 
@@ -69,10 +82,16 @@ export default function Scene4NextEvent({ dbEvent }: { dbEvent?: EventFromDB | n
   const [rsvpState, setRsvpState] = useState<
     "idle" | "loading" | "done" | "already"
   >("idle");
+  const [attendees, setAttendees] = useState<Attendee[]>([]);
+  const [rsvpCount, setRsvpCount] = useState(0);
   const { user, loading: authLoading } = useAuth();
 
-  // Check if user already RSVP'd
+  // Load attendees and check RSVP status
   useEffect(() => {
+    getEventAttendees(event.id).then((data) => {
+      setAttendees(data as Attendee[]);
+      setRsvpCount(data.length);
+    });
     if (!user) return;
     checkRsvp(user.id, event.id).then(({ hasRsvpd }) => {
       if (hasRsvpd) setRsvpState("already");
@@ -90,10 +109,15 @@ export default function Scene4NextEvent({ dbEvent }: { dbEvent?: EventFromDB | n
 
     if (result.success) {
       setRsvpState(result.alreadyRsvpd ? "already" : "done");
+      // Refresh attendees
+      getEventAttendees(event.id).then((data) => {
+        setAttendees(data as Attendee[]);
+        setRsvpCount(data.length);
+      });
     } else {
       setRsvpState("idle");
     }
-  }, [user]);
+  }, [user, event.id]);
 
   useEffect(() => {
     if (!sectionRef.current) return;
@@ -241,19 +265,58 @@ export default function Scene4NextEvent({ dbEvent }: { dbEvent?: EventFromDB | n
           >
             {rsvpLabel()}
           </button>
-          <a
-            href="https://www.facebook.com/CreatorSpaceFW/events"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="rounded-full border-2 border-[var(--color-black)]/40 px-10 py-5 font-[family-name:var(--font-display)] text-lg text-[var(--color-black)]/70 transition-all duration-500 hover:border-[var(--color-black)] hover:text-[var(--color-black)]"
-          >
-            EVENT DETAILS →
-          </a>
+          {event.facebookUrl && (
+            <a
+              href={event.facebookUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-full border-2 border-[var(--color-black)]/40 px-10 py-5 font-[family-name:var(--font-display)] text-lg text-[var(--color-black)]/70 transition-all duration-500 hover:border-[var(--color-black)] hover:text-[var(--color-black)]"
+            >
+              FB EVENT →
+            </a>
+          )}
         </div>
 
         <p className="event-reveal mt-4 font-[family-name:var(--font-mono)] text-sm font-bold uppercase tracking-widest text-[var(--color-black)]/60">
           Free Admission
         </p>
+
+        {/* Attending Creators */}
+        {rsvpCount > 0 && (
+          <div className="event-reveal mt-8">
+            <p className="mb-3 font-[family-name:var(--font-mono)] text-xs uppercase tracking-[0.2em] text-[var(--color-black)]/50">
+              {rsvpCount} Creator{rsvpCount !== 1 ? "s" : ""} Going
+            </p>
+            <div className="flex flex-wrap items-center justify-center gap-1">
+              {attendees.slice(0, 20).map((attendee, i) => (
+                <Link
+                  key={attendee.id}
+                  href={attendee.slug ? `/directory/${attendee.slug}` : "#"}
+                  title={`${attendee.first_name || ""} ${attendee.last_name || ""}`.trim()}
+                  className="group relative"
+                  style={{ zIndex: 20 - i }}
+                >
+                  {attendee.avatar_url ? (
+                    <img
+                      src={attendee.avatar_url}
+                      alt={`${attendee.first_name || "Creator"}`}
+                      className="h-10 w-10 rounded-full border-2 border-[var(--color-coral)] object-cover transition-transform group-hover:scale-125 group-hover:z-30"
+                    />
+                  ) : (
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-[var(--color-coral)] bg-[var(--color-black)] font-[family-name:var(--font-mono)] text-xs font-bold text-[var(--color-coral)] transition-transform group-hover:scale-125 group-hover:z-30">
+                      {(attendee.first_name?.[0] || "?").toUpperCase()}
+                    </div>
+                  )}
+                </Link>
+              ))}
+              {rsvpCount > 20 && (
+                <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-[var(--color-black)]/30 bg-[var(--color-black)]/20 font-[family-name:var(--font-mono)] text-xs font-bold text-[var(--color-black)]">
+                  +{rsvpCount - 20}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </section>
   );
