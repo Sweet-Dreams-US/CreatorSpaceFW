@@ -7,6 +7,7 @@ import { isAdmin } from "@/lib/admin";
 import { createClient } from "@/lib/supabase";
 import { adminUpdateProfile } from "@/app/actions/profile";
 import AvatarUpload from "@/components/ui/AvatarUpload";
+import SocialFields from "@/components/ui/SocialFields";
 import Link from "next/link";
 
 const SKILL_OPTIONS = [
@@ -227,11 +228,9 @@ export default function AdminEditPage() {
               className={inputClass}
             />
           </div>
-          <input
-            name="social"
-            defaultValue={profile.social || ""}
-            placeholder="Social (Instagram, X, etc.)"
-            className={inputClass}
+          <SocialFields
+            defaultValue={profile.social}
+            inputClass={inputClass}
           />
           <input
             name="website"

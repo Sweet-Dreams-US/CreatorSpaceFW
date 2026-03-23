@@ -11,6 +11,7 @@ import AvatarUpload from "@/components/ui/AvatarUpload";
 import ProjectEditor, { type Project } from "@/components/ui/ProjectEditor";
 import ProfileCompleteness from "@/components/ui/ProfileCompleteness";
 import ToggleSwitch from "@/components/ui/ToggleSwitch";
+import SocialFields from "@/components/ui/SocialFields";
 import Link from "next/link";
 
 const SKILL_OPTIONS = [
@@ -274,11 +275,9 @@ export default function ProfileEditPage() {
               className={inputClass}
             />
           </div>
-          <input
-            name="social"
-            defaultValue={profile.social || ""}
-            placeholder="Social (Instagram, X, etc.)"
-            className={inputClass}
+          <SocialFields
+            defaultValue={profile.social}
+            inputClass={inputClass}
           />
           <input
             name="website"

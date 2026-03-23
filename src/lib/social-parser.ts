@@ -1,5 +1,5 @@
 export interface SocialLink {
-  platform: "instagram" | "tiktok" | "youtube" | "twitter" | "website" | "other";
+  platform: "instagram" | "tiktok" | "youtube" | "twitter" | "linkedin" | "facebook" | "website" | "other";
   handle: string;
   url: string;
   label: string;
@@ -152,6 +152,26 @@ function parseUrl(urlStr: string): SocialLink | null {
       };
     }
 
+    if (host.includes("linkedin.com")) {
+      const path = url.pathname.replace(/^\/in\//, "").replace(/^\/company\//, "").replace(/\/$/, "");
+      return {
+        platform: "linkedin",
+        handle: path,
+        url: urlStr,
+        label: path,
+      };
+    }
+
+    if (host.includes("facebook.com") || host.includes("fb.com")) {
+      const handle = url.pathname.replace(/^\//, "").replace(/\/$/, "");
+      return {
+        platform: "facebook",
+        handle,
+        url: urlStr,
+        label: handle,
+      };
+    }
+
     return {
       platform: "website",
       handle: host,
@@ -173,6 +193,10 @@ export function getPlatformIcon(platform: SocialLink["platform"]): string {
       return "YT";
     case "twitter":
       return "X";
+    case "linkedin":
+      return "LI";
+    case "facebook":
+      return "FB";
     case "website":
       return "WEB";
     default:
@@ -190,6 +214,10 @@ export function getPlatformColor(platform: SocialLink["platform"]): string {
       return "var(--color-coral-deep)";
     case "twitter":
       return "var(--color-sky)";
+    case "linkedin":
+      return "#0A66C2";
+    case "facebook":
+      return "#1877F2";
     case "website":
       return "var(--color-lime)";
     default:
