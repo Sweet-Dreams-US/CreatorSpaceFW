@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { joinCreatorDatabase } from "@/app/actions/creators";
+import TurnstileWidget from "@/components/ui/TurnstileWidget";
 
 const SKILL_OPTIONS = [
   "Video",
@@ -43,6 +44,7 @@ export default function JoinFormModal({ open, onClose }: JoinFormModalProps) {
   });
 
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
+  const [turnstileToken, setTurnstileToken] = useState("");
 
   // Close on Escape
   useEffect(() => {
@@ -111,6 +113,7 @@ export default function JoinFormModal({ open, onClose }: JoinFormModalProps) {
     const result = await joinCreatorDatabase({
       ...form,
       skills: selectedSkills.join(", "),
+      turnstileToken,
     });
 
     setLoading(false);
@@ -296,9 +299,14 @@ export default function JoinFormModal({ open, onClose }: JoinFormModalProps) {
               </p>
             )}
 
+            <TurnstileWidget
+              onSuccess={setTurnstileToken}
+              onExpire={() => setTurnstileToken("")}
+            />
+
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !turnstileToken}
               className="mt-2 w-full rounded-full bg-[var(--color-coral)] px-8 py-3.5 font-[family-name:var(--font-mono)] text-sm font-semibold text-[var(--color-black)] transition-all duration-300 hover:scale-105 hover:shadow-[0_0_24px_#fa927740] disabled:opacity-50 disabled:hover:scale-100"
             >
               {loading ? "SUBMITTING..." : "JOIN"}

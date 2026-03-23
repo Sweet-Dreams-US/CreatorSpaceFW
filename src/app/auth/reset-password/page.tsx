@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase";
 import PasswordInput from "@/components/ui/PasswordInput";
+import TurnstileWidget from "@/components/ui/TurnstileWidget";
 
 export default function ResetPasswordPage() {
   const [error, setError] = useState("");
@@ -12,6 +13,7 @@ export default function ResetPasswordPage() {
   const [ready, setReady] = useState(false);
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState("");
   const router = useRouter();
 
   useEffect(() => {
@@ -137,9 +139,14 @@ export default function ResetPasswordPage() {
             </p>
           )}
 
+          <TurnstileWidget
+            onSuccess={setTurnstileToken}
+            onExpire={() => setTurnstileToken("")}
+          />
+
           <button
             type="submit"
-            disabled={loading || !ready}
+            disabled={loading || !ready || !turnstileToken}
             className="w-full rounded-full bg-[var(--color-coral)] px-8 py-3.5 font-[family-name:var(--font-mono)] text-sm font-semibold text-[var(--color-black)] transition-all duration-300 hover:scale-105 hover:shadow-[0_0_24px_#fa927740] disabled:opacity-50 disabled:hover:scale-100"
           >
             {loading ? "UPDATING..." : "SET NEW PASSWORD"}

@@ -2,6 +2,7 @@
 
 import { getSupabaseAdmin } from "@/lib/supabase-server";
 import { generateUniqueSlug } from "@/lib/utils";
+import { verifyTurnstileToken } from "@/lib/turnstile";
 
 interface JoinFormData {
   first_name: string;
@@ -11,9 +12,20 @@ interface JoinFormData {
   company?: string;
   job_title?: string;
   skills: string;
+  turnstileToken?: string;
 }
 
 export async function joinCreatorDatabase(data: JoinFormData) {
+  // Verify Turnstile token (server-side)
+  if (data.turnstileToken) {
+    const valid = await verifyTurnstileToken(data.turnstileToken);
+    if (!valid) {
+      return { success: false, error: "Security verification failed. Please try again." };
+    }
+  } else if (process.env.TURNSTILE_SECRET_KEY) {
+    return { success: false, error: "Security verification required." };
+  }
+
   // Validate required fields
   if (!data.first_name?.trim() || !data.last_name?.trim() || !data.email?.trim() || !data.skills?.trim()) {
     return { success: false, error: "Please fill in all required fields." };
