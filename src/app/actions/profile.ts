@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createServerSupabaseClient, supabaseAdmin } from "@/lib/supabase-server";
+import { createServerSupabaseClient, getSupabaseAdmin } from "@/lib/supabase-server";
 import { isAdmin } from "@/lib/admin";
 
 export async function updateProfile(formData: FormData) {
@@ -48,7 +48,7 @@ export async function updateProfile(formData: FormData) {
     updateData.email_prefs = emailPrefs;
   }
 
-  const { error } = await supabaseAdmin
+  const { error } = await getSupabaseAdmin()
     .from("creators")
     .update(updateData)
     .eq("auth_id", user.id);
@@ -78,7 +78,7 @@ export async function adminUpdateProfile(creatorId: string, formData: FormData) 
     return { error: "First and last name are required." };
   }
 
-  const { error } = await supabaseAdmin
+  const { error } = await getSupabaseAdmin()
     .from("creators")
     .update({
       first_name: firstName,
@@ -111,7 +111,7 @@ export async function updateAvatarUrl(url: string) {
     return { error: "Not authenticated." };
   }
 
-  const { error } = await supabaseAdmin
+  const { error } = await getSupabaseAdmin()
     .from("creators")
     .update({ avatar_url: url, updated_at: new Date().toISOString() })
     .eq("auth_id", user.id);

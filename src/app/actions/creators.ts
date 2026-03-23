@@ -1,6 +1,6 @@
 "use server";
 
-import { supabaseAdmin } from "@/lib/supabase-server";
+import { getSupabaseAdmin } from "@/lib/supabase-server";
 import { generateUniqueSlug } from "@/lib/utils";
 
 interface JoinFormData {
@@ -30,7 +30,7 @@ export async function joinCreatorDatabase(data: JoinFormData) {
     data.last_name.trim()
   );
 
-  const { error } = await supabaseAdmin.from("creators").insert({
+  const { error } = await getSupabaseAdmin().from("creators").insert({
     first_name: data.first_name.trim(),
     last_name: data.last_name.trim(),
     email: data.email.trim(),

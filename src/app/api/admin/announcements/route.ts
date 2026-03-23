@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerSupabaseClient, supabaseAdmin } from "@/lib/supabase-server";
+import { createServerSupabaseClient, getSupabaseAdmin } from "@/lib/supabase-server";
 import { isAdmin } from "@/lib/admin";
 import { sendAnnouncementEmail } from "@/lib/email";
 
@@ -13,7 +13,7 @@ export async function GET() {
     return NextResponse.json({ error: "Not authorized" }, { status: 403 });
   }
 
-  const { data } = await supabaseAdmin
+  const { data } = await getSupabaseAdmin()
     .from("announcements")
     .select("*")
     .order("created_at", { ascending: false })
@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Build query based on audience
-  let query = supabaseAdmin
+  let query = getSupabaseAdmin()
     .from("creators")
     .select("id, first_name, email, claimed");
 
@@ -105,7 +105,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Log the announcement
-  await supabaseAdmin.from("announcements").insert({
+  await getSupabaseAdmin().from("announcements").insert({
     subject,
     body,
     sent_by: user.id,

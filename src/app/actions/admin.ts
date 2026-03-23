@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createServerSupabaseClient, supabaseAdmin } from "@/lib/supabase-server";
+import { createServerSupabaseClient, getSupabaseAdmin } from "@/lib/supabase-server";
 import { isAdmin } from "@/lib/admin";
 import { generateUniqueSlug } from "@/lib/utils";
 
@@ -21,7 +21,7 @@ async function requireAdmin() {
 export async function adminDeleteCreator(creatorId: string) {
   await requireAdmin();
 
-  const { error } = await supabaseAdmin
+  const { error } = await getSupabaseAdmin()
     .from("creators")
     .delete()
     .eq("id", creatorId);
@@ -36,7 +36,7 @@ export async function adminDeleteCreator(creatorId: string) {
 export async function adminDeleteCreators(creatorIds: string[]) {
   await requireAdmin();
 
-  const { error } = await supabaseAdmin
+  const { error } = await getSupabaseAdmin()
     .from("creators")
     .delete()
     .in("id", creatorIds);
@@ -61,7 +61,7 @@ export async function adminAddCreator(data: {
 
   const slug = await generateUniqueSlug(data.first_name, data.last_name || "");
 
-  const { error } = await supabaseAdmin.from("creators").insert({
+  const { error } = await getSupabaseAdmin().from("creators").insert({
     first_name: data.first_name,
     last_name: data.last_name || null,
     email: data.email || null,
@@ -96,7 +96,7 @@ export async function adminUpdateCreator(
 ) {
   await requireAdmin();
 
-  const { error } = await supabaseAdmin
+  const { error } = await getSupabaseAdmin()
     .from("creators")
     .update({
       ...data,
@@ -112,7 +112,7 @@ export async function adminUpdateCreator(
 }
 
 export async function getAllCreatorsAdmin() {
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await getSupabaseAdmin()
     .from("creators")
     .select("*")
     .order("created_at", { ascending: false });
@@ -122,32 +122,32 @@ export async function getAllCreatorsAdmin() {
 }
 
 export async function getAdminStats() {
-  const { count: totalCreators } = await supabaseAdmin
+  const { count: totalCreators } = await getSupabaseAdmin()
     .from("creators")
     .select("*", { count: "exact", head: true });
 
-  const { count: claimedCreators } = await supabaseAdmin
+  const { count: claimedCreators } = await getSupabaseAdmin()
     .from("creators")
     .select("*", { count: "exact", head: true })
     .eq("claimed", true);
 
-  const { count: invitesSent } = await supabaseAdmin
+  const { count: invitesSent } = await getSupabaseAdmin()
     .from("creators")
     .select("*", { count: "exact", head: true })
     .not("invite_sent_at", "is", null);
 
-  const { count: totalEvents } = await supabaseAdmin
+  const { count: totalEvents } = await getSupabaseAdmin()
     .from("events")
     .select("*", { count: "exact", head: true });
 
-  const { count: totalRsvps } = await supabaseAdmin
+  const { count: totalRsvps } = await getSupabaseAdmin()
     .from("rsvps")
     .select("*", { count: "exact", head: true });
 
   // Recent signups (last 7 days)
   const weekAgo = new Date();
   weekAgo.setDate(weekAgo.getDate() - 7);
-  const { data: recentSignups } = await supabaseAdmin
+  const { data: recentSignups } = await getSupabaseAdmin()
     .from("creators")
     .select("id, first_name, last_name, email, avatar_url, claimed, created_at")
     .eq("claimed", true)
@@ -169,7 +169,7 @@ export async function getAdminStats() {
 export async function exportCreatorsCSV() {
   await requireAdmin();
 
-  const { data } = await supabaseAdmin
+  const { data } = await getSupabaseAdmin()
     .from("creators")
     .select("first_name, last_name, email, company, job_title, skills, social, website, claimed, created_at")
     .order("last_name", { ascending: true });

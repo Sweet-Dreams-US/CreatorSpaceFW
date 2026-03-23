@@ -1,6 +1,6 @@
 "use server";
 
-import { createServerSupabaseClient, supabaseAdmin } from "@/lib/supabase-server";
+import { createServerSupabaseClient, getSupabaseAdmin } from "@/lib/supabase-server";
 import { isAdmin } from "@/lib/admin";
 
 async function requireAdmin() {
@@ -30,25 +30,25 @@ export async function getAnalyticsOverview() {
     { count: viewsMonth },
     { count: totalViews },
   ] = await Promise.all([
-    supabaseAdmin
+    getSupabaseAdmin()
       .from("page_views")
       .select("*", { count: "exact", head: true })
       .gte("created_at", todayStart),
-    supabaseAdmin
+    getSupabaseAdmin()
       .from("page_views")
       .select("*", { count: "exact", head: true })
       .gte("created_at", weekAgo),
-    supabaseAdmin
+    getSupabaseAdmin()
       .from("page_views")
       .select("*", { count: "exact", head: true })
       .gte("created_at", monthAgo),
-    supabaseAdmin
+    getSupabaseAdmin()
       .from("page_views")
       .select("*", { count: "exact", head: true }),
   ]);
 
   // Unique visitors this week (distinct user_ids, excluding null)
-  const { data: uniqueVisitorsData } = await supabaseAdmin
+  const { data: uniqueVisitorsData } = await getSupabaseAdmin()
     .from("page_views")
     .select("user_id")
     .gte("created_at", weekAgo)
@@ -58,7 +58,7 @@ export async function getAnalyticsOverview() {
 
   // Active users (page views in last 24 hours)
   const dayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
-  const { data: activeData } = await supabaseAdmin
+  const { data: activeData } = await getSupabaseAdmin()
     .from("page_views")
     .select("user_id")
     .gte("created_at", dayAgo)
@@ -67,7 +67,7 @@ export async function getAnalyticsOverview() {
   const activeUsers = new Set(activeData?.map((r) => r.user_id)).size;
 
   // Top pages (last 30 days)
-  const { data: pagesData } = await supabaseAdmin
+  const { data: pagesData } = await getSupabaseAdmin()
     .from("page_views")
     .select("path")
     .gte("created_at", monthAgo);
@@ -97,7 +97,7 @@ export async function getTrafficData(days: number = 14) {
 
   const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
 
-  const { data } = await supabaseAdmin
+  const { data } = await getSupabaseAdmin()
     .from("page_views")
     .select("created_at")
     .gte("created_at", since)
@@ -133,7 +133,7 @@ export async function getTrafficData(days: number = 14) {
 export async function getTopProfiles(limit: number = 10) {
   await requireAdmin();
 
-  const { data } = await supabaseAdmin
+  const { data } = await getSupabaseAdmin()
     .from("profile_views")
     .select("creator_id");
 
@@ -149,7 +149,7 @@ export async function getTopProfiles(limit: number = 10) {
     .slice(0, limit);
 
   const creatorIds = topIds.map(([id]) => id);
-  const { data: creators } = await supabaseAdmin
+  const { data: creators } = await getSupabaseAdmin()
     .from("creators")
     .select("id, first_name, last_name, slug")
     .in("id", creatorIds);
@@ -170,7 +170,7 @@ export async function getTopProfiles(limit: number = 10) {
 export async function getRecentErrors(limit: number = 20) {
   await requireAdmin();
 
-  const { data } = await supabaseAdmin
+  const { data } = await getSupabaseAdmin()
     .from("error_reports")
     .select("*")
     .order("created_at", { ascending: false })
@@ -182,7 +182,7 @@ export async function getRecentErrors(limit: number = 20) {
 export async function getConnectionActivity(limit: number = 20) {
   await requireAdmin();
 
-  const { data } = await supabaseAdmin
+  const { data } = await getSupabaseAdmin()
     .from("connections")
     .select("id, from_creator_id, to_creator_id, message, status, created_at")
     .order("created_at", { ascending: false })
@@ -195,7 +195,7 @@ export async function getConnectionActivity(limit: number = 20) {
     ...new Set(data.flatMap((c) => [c.from_creator_id, c.to_creator_id])),
   ];
 
-  const { data: creators } = await supabaseAdmin
+  const { data: creators } = await getSupabaseAdmin()
     .from("creators")
     .select("id, first_name, last_name")
     .in("id", creatorIds);
@@ -217,7 +217,7 @@ export async function getConnectionActivity(limit: number = 20) {
 export async function getRecentSignups(limit: number = 10) {
   await requireAdmin();
 
-  const { data } = await supabaseAdmin
+  const { data } = await getSupabaseAdmin()
     .from("creators")
     .select("id, first_name, last_name, email, avatar_url, slug, created_at")
     .eq("claimed", true)

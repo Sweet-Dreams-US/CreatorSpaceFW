@@ -1,0 +1,64 @@
+# Creator Space Fort Wayne — Full Documentation
+
+> Fort Wayne, Indiana's creative community directory and networking platform.
+
+## Overview
+
+Creator Space Fort Wayne (creatorspacefw.com) is a free community directory connecting creative professionals in Fort Wayne, Indiana. The platform serves as both a searchable database of local talent and a hub for monthly creator meetups.
+
+## Platform Features
+
+### Creator Directory
+- Searchable database of Fort Wayne creatives
+- Filter by skill category: Video, Photo, Editor, VFX, Code, Music, Aerial, Design, Writing, Audio Engineering, Animation, Marketing, Business
+- Each creator has a public profile with bio, skills, portfolio, social links, and projects
+- Direct profile URLs: https://creatorspacefw.com/directory/{creator-slug}
+
+### Creator Profiles
+- Avatar and personal branding
+- Skills and expertise tags
+- Bio and professional description
+- Portfolio projects with images and YouTube embeds
+- Social media links (Instagram, YouTube, TikTok, LinkedIn, Twitter, etc.)
+- Website link
+- Company and job title
+- Community badges (Founding Member, Verified, etc.)
+- Connect button for networking requests
+- Shareable profile links
+
+### Community Features
+- Free monthly meetups for all creators
+- Connection requests between creators
+- Community announcements via email
+- Profile sharing to social media
+
+## Location
+
+Fort Wayne is the second-largest city in Indiana with a growing creative economy. Creator Space FW serves the greater Fort Wayne metropolitan area including Allen County.
+
+## Frequently Asked Questions
+
+**Q: Is Creator Space Fort Wayne free?**
+A: Yes, completely free to join and use.
+
+**Q: Do I need to be a professional to join?**
+A: No. The community welcomes creators at all levels — hobbyists, students, freelancers, and professionals.
+
+**Q: What types of creators are in the directory?**
+A: Videographers, photographers, editors, VFX artists, developers, musicians, drone operators, graphic designers, writers, audio engineers, animators, marketers, and business professionals.
+
+**Q: How do I find a creator for my project?**
+A: Visit https://creatorspacefw.com/directory and use the search bar or skill filters to find the right person.
+
+**Q: How do I join the directory?**
+A: Sign up at https://creatorspacefw.com/auth/signup and complete your profile.
+
+**Q: Where are the meetups held?**
+A: Meetup locations vary. Check the website for upcoming event details.
+
+## Technical Details
+
+- Built with Next.js, React, and TypeScript
+- Hosted on Vercel
+- Database powered by Supabase (PostgreSQL)
+- Transactional email via Resend

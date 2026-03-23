@@ -1,6 +1,6 @@
 "use server";
 
-import { createServerSupabaseClient, supabaseAdmin } from "@/lib/supabase-server";
+import { createServerSupabaseClient, getSupabaseAdmin } from "@/lib/supabase-server";
 
 export async function sendConnectionRequest(toCreatorId: string, message?: string) {
   const supabase = await createServerSupabaseClient();
@@ -28,7 +28,7 @@ export async function sendConnectionRequest(toCreatorId: string, message?: strin
   }
 
   // Check if a connection already exists in either direction
-  const { data: existing } = await supabaseAdmin
+  const { data: existing } = await getSupabaseAdmin()
     .from("connections")
     .select("id, status")
     .or(
@@ -41,7 +41,7 @@ export async function sendConnectionRequest(toCreatorId: string, message?: strin
     return { error: "Connection already exists." };
   }
 
-  const { error } = await supabaseAdmin.from("connections").insert({
+  const { error } = await getSupabaseAdmin().from("connections").insert({
     from_creator_id: creator.id,
     to_creator_id: toCreatorId,
     message: message?.trim() || null,
@@ -56,7 +56,7 @@ export async function sendConnectionRequest(toCreatorId: string, message?: strin
 }
 
 export async function getConnectionStatus(fromCreatorId: string, toCreatorId: string) {
-  const { data } = await supabaseAdmin
+  const { data } = await getSupabaseAdmin()
     .from("connections")
     .select("id, status, from_creator_id, to_creator_id")
     .or(
@@ -92,7 +92,7 @@ export async function getMyConnections() {
     return { error: "Creator profile not found.", connections: [] };
   }
 
-  const { data: connections } = await supabaseAdmin
+  const { data: connections } = await getSupabaseAdmin()
     .from("connections")
     .select("id, from_creator_id, to_creator_id, message, status, created_at")
     .or(`from_creator_id.eq.${creator.id},to_creator_id.eq.${creator.id}`)
@@ -122,7 +122,7 @@ export async function respondToConnection(connectionId: string, status: "accepte
   }
 
   // Verify this connection is addressed to the current user
-  const { data: connection } = await supabaseAdmin
+  const { data: connection } = await getSupabaseAdmin()
     .from("connections")
     .select("id, to_creator_id")
     .eq("id", connectionId)
@@ -132,7 +132,7 @@ export async function respondToConnection(connectionId: string, status: "accepte
     return { error: "Not authorized to respond to this connection." };
   }
 
-  const { error } = await supabaseAdmin
+  const { error } = await getSupabaseAdmin()
     .from("connections")
     .update({ status })
     .eq("id", connectionId);

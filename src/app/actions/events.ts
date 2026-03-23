@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createServerSupabaseClient, supabaseAdmin } from "@/lib/supabase-server";
+import { createServerSupabaseClient, getSupabaseAdmin } from "@/lib/supabase-server";
 import { isAdmin } from "@/lib/admin";
 
 interface EventData {
@@ -23,7 +23,7 @@ export async function createEvent(data: EventData) {
     return { error: "Not authorized." };
   }
 
-  const { error, data: event } = await supabaseAdmin
+  const { error, data: event } = await getSupabaseAdmin()
     .from("events")
     .insert({
       title: data.title,
@@ -56,7 +56,7 @@ export async function updateEvent(eventId: string, data: EventData) {
     return { error: "Not authorized." };
   }
 
-  const { error } = await supabaseAdmin
+  const { error } = await getSupabaseAdmin()
     .from("events")
     .update({
       title: data.title,
@@ -88,7 +88,7 @@ export async function deleteEvent(eventId: string) {
     return { error: "Not authorized." };
   }
 
-  const { error } = await supabaseAdmin
+  const { error } = await getSupabaseAdmin()
     .from("events")
     .delete()
     .eq("id", eventId);
@@ -103,7 +103,7 @@ export async function deleteEvent(eventId: string) {
 }
 
 export async function getNextEvent() {
-  const { data } = await supabaseAdmin
+  const { data } = await getSupabaseAdmin()
     .from("events")
     .select("*")
     .gte("date", new Date().toISOString())
@@ -115,7 +115,7 @@ export async function getNextEvent() {
 }
 
 export async function getAllEvents() {
-  const { data } = await supabaseAdmin
+  const { data } = await getSupabaseAdmin()
     .from("events")
     .select("*")
     .order("date", { ascending: false });
@@ -124,7 +124,7 @@ export async function getAllEvents() {
 }
 
 export async function getEventRsvpCount(eventId: string) {
-  const { count } = await supabaseAdmin
+  const { count } = await getSupabaseAdmin()
     .from("rsvps")
     .select("*", { count: "exact", head: true })
     .eq("event_id", eventId);
@@ -133,7 +133,7 @@ export async function getEventRsvpCount(eventId: string) {
 }
 
 export async function getEventAttendees(eventId: string) {
-  const { data } = await supabaseAdmin
+  const { data } = await getSupabaseAdmin()
     .from("rsvps")
     .select("user_id, created_at")
     .eq("event_id", eventId);
@@ -141,7 +141,7 @@ export async function getEventAttendees(eventId: string) {
   if (!data || data.length === 0) return [];
 
   const userIds = data.map((r) => r.user_id);
-  const { data: creators } = await supabaseAdmin
+  const { data: creators } = await getSupabaseAdmin()
     .from("creators")
     .select("id, first_name, last_name, email, avatar_url, auth_id")
     .in("auth_id", userIds);

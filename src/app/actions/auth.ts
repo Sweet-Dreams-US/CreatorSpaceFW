@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { createServerSupabaseClient, supabaseAdmin } from "@/lib/supabase-server";
+import { createServerSupabaseClient, getSupabaseAdmin } from "@/lib/supabase-server";
 import { generateUniqueSlug } from "@/lib/utils";
 
 interface ClaimData {
@@ -16,7 +16,7 @@ export async function claimOrCreateCreator(data: ClaimData) {
   const { userId, firstName, lastName, email, inviteToken } = data;
 
   // Guard: check if email is already claimed
-  const { data: alreadyClaimed } = await supabaseAdmin
+  const { data: alreadyClaimed } = await getSupabaseAdmin()
     .from("creators")
     .select("id")
     .ilike("email", email)
@@ -31,7 +31,7 @@ export async function claimOrCreateCreator(data: ClaimData) {
 
   // Priority 1: Token-based claim (from invitation email link)
   if (inviteToken) {
-    const { data: tokenMatch } = await supabaseAdmin
+    const { data: tokenMatch } = await getSupabaseAdmin()
       .from("creators")
       .select("id")
       .eq("invite_token", inviteToken)
@@ -43,7 +43,7 @@ export async function claimOrCreateCreator(data: ClaimData) {
 
   // Priority 2: Email-based claim
   if (!existingId) {
-    const { data: emailMatch } = await supabaseAdmin
+    const { data: emailMatch } = await getSupabaseAdmin()
       .from("creators")
       .select("id")
       .ilike("email", email)
@@ -55,7 +55,7 @@ export async function claimOrCreateCreator(data: ClaimData) {
 
   // Priority 3: Name-based claim (fallback)
   if (!existingId) {
-    const { data: nameMatch } = await supabaseAdmin
+    const { data: nameMatch } = await getSupabaseAdmin()
       .from("creators")
       .select("id")
       .ilike("first_name", firstName)
@@ -71,7 +71,7 @@ export async function claimOrCreateCreator(data: ClaimData) {
 
   if (existingId) {
     // Claim existing row
-    const { error } = await supabaseAdmin
+    const { error } = await getSupabaseAdmin()
       .from("creators")
       .update({
         auth_id: userId,
@@ -85,7 +85,7 @@ export async function claimOrCreateCreator(data: ClaimData) {
     if (error) return { error: "Failed to claim profile." };
   } else {
     // Insert new row
-    const { error } = await supabaseAdmin.from("creators").insert({
+    const { error } = await getSupabaseAdmin().from("creators").insert({
       auth_id: userId,
       first_name: firstName,
       last_name: lastName,

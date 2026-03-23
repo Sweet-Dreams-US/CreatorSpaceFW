@@ -1,4 +1,4 @@
-import { supabaseAdmin } from "./supabase-server";
+import { getSupabaseAdmin } from "./supabase-server";
 
 export async function generateUniqueSlug(
   firstName: string,
@@ -10,7 +10,7 @@ export async function generateUniqueSlug(
     .replace(/[^a-z0-9-]/g, "");
 
   // Check if base slug is available
-  const { data } = await supabaseAdmin
+  const { data } = await getSupabaseAdmin()
     .from("creators")
     .select("slug")
     .like("slug", `${base}%`);

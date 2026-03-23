@@ -1,6 +1,6 @@
 "use server";
 
-import { createServerSupabaseClient, supabaseAdmin } from "@/lib/supabase-server";
+import { createServerSupabaseClient, getSupabaseAdmin } from "@/lib/supabase-server";
 
 export async function logPageView(path: string, referrer?: string) {
   try {
@@ -9,7 +9,7 @@ export async function logPageView(path: string, referrer?: string) {
       data: { user },
     } = await supabase.auth.getUser();
 
-    await supabaseAdmin.from("page_views").insert({
+    await getSupabaseAdmin().from("page_views").insert({
       path,
       referrer: referrer || null,
       user_id: user?.id || null,
@@ -29,7 +29,7 @@ export async function logProfileView(creatorId: string) {
       data: { user },
     } = await supabase.auth.getUser();
 
-    await supabaseAdmin.from("profile_views").insert({
+    await getSupabaseAdmin().from("profile_views").insert({
       creator_id: creatorId,
       viewer_id: user?.id || null,
     });
@@ -51,7 +51,7 @@ export async function reportError(
       data: { user },
     } = await supabase.auth.getUser();
 
-    await supabaseAdmin.from("error_reports").insert({
+    await getSupabaseAdmin().from("error_reports").insert({
       page,
       error_message: errorMessage,
       user_id: user?.id || null,

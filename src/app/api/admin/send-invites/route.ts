@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerSupabaseClient, supabaseAdmin } from "@/lib/supabase-server";
+import { createServerSupabaseClient, getSupabaseAdmin } from "@/lib/supabase-server";
 import { isAdmin } from "@/lib/admin";
 import { sendInviteEmail } from "@/lib/email";
 
@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Fetch the creators
-  const { data: creators } = await supabaseAdmin
+  const { data: creators } = await getSupabaseAdmin()
     .from("creators")
     .select("id, first_name, email, invite_token")
     .in("id", creatorIds)
@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
         }
 
         // Update invite_sent_at
-        await supabaseAdmin
+        await getSupabaseAdmin()
           .from("creators")
           .update({ invite_sent_at: new Date().toISOString() })
           .eq("id", creator.id);

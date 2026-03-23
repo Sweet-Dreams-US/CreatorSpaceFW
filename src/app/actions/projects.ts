@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createServerSupabaseClient, supabaseAdmin } from "@/lib/supabase-server";
+import { createServerSupabaseClient, getSupabaseAdmin } from "@/lib/supabase-server";
 
 async function getAuthCreatorId(): Promise<string | null> {
   const supabase = await createServerSupabaseClient();
@@ -10,7 +10,7 @@ async function getAuthCreatorId(): Promise<string | null> {
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const { data } = await supabaseAdmin
+  const { data } = await getSupabaseAdmin()
     .from("creators")
     .select("id")
     .eq("auth_id", user.id)
@@ -30,7 +30,7 @@ export async function createProject(data: {
   if (!creatorId) return { error: "Not authenticated." };
 
   // Get next sort order
-  const { data: existing } = await supabaseAdmin
+  const { data: existing } = await getSupabaseAdmin()
     .from("projects")
     .select("sort_order")
     .eq("creator_id", creatorId)
@@ -39,7 +39,7 @@ export async function createProject(data: {
 
   const nextOrder = existing && existing.length > 0 ? existing[0].sort_order + 1 : 0;
 
-  const { data: project, error } = await supabaseAdmin
+  const { data: project, error } = await getSupabaseAdmin()
     .from("projects")
     .insert({
       creator_id: creatorId,
@@ -74,7 +74,7 @@ export async function updateProject(
   if (!creatorId) return { error: "Not authenticated." };
 
   // Verify ownership
-  const { data: project } = await supabaseAdmin
+  const { data: project } = await getSupabaseAdmin()
     .from("projects")
     .select("creator_id")
     .eq("id", projectId)
@@ -84,7 +84,7 @@ export async function updateProject(
     return { error: "Not authorized." };
   }
 
-  const { error } = await supabaseAdmin
+  const { error } = await getSupabaseAdmin()
     .from("projects")
     .update({
       title: data.title,
@@ -108,7 +108,7 @@ export async function deleteProject(projectId: string) {
   if (!creatorId) return { error: "Not authenticated." };
 
   // Verify ownership
-  const { data: project } = await supabaseAdmin
+  const { data: project } = await getSupabaseAdmin()
     .from("projects")
     .select("creator_id")
     .eq("id", projectId)
@@ -119,12 +119,12 @@ export async function deleteProject(projectId: string) {
   }
 
   // Delete images first (cascade should handle it, but be explicit)
-  await supabaseAdmin
+  await getSupabaseAdmin()
     .from("project_images")
     .delete()
     .eq("project_id", projectId);
 
-  const { error } = await supabaseAdmin
+  const { error } = await getSupabaseAdmin()
     .from("projects")
     .delete()
     .eq("id", projectId);
@@ -137,7 +137,7 @@ export async function deleteProject(projectId: string) {
 }
 
 export async function getCreatorProjects(creatorId: string) {
-  const { data: projects } = await supabaseAdmin
+  const { data: projects } = await getSupabaseAdmin()
     .from("projects")
     .select("*")
     .eq("creator_id", creatorId)
@@ -147,7 +147,7 @@ export async function getCreatorProjects(creatorId: string) {
 
   // Fetch images for all projects
   const projectIds = projects.map((p) => p.id);
-  const { data: images } = await supabaseAdmin
+  const { data: images } = await getSupabaseAdmin()
     .from("project_images")
     .select("*")
     .in("project_id", projectIds)
@@ -164,7 +164,7 @@ export async function addProjectImage(projectId: string, imageUrl: string) {
   if (!creatorId) return { error: "Not authenticated." };
 
   // Verify ownership
-  const { data: project } = await supabaseAdmin
+  const { data: project } = await getSupabaseAdmin()
     .from("projects")
     .select("creator_id")
     .eq("id", projectId)
@@ -175,7 +175,7 @@ export async function addProjectImage(projectId: string, imageUrl: string) {
   }
 
   // Get next sort order
-  const { data: existing } = await supabaseAdmin
+  const { data: existing } = await getSupabaseAdmin()
     .from("project_images")
     .select("sort_order")
     .eq("project_id", projectId)
@@ -184,7 +184,7 @@ export async function addProjectImage(projectId: string, imageUrl: string) {
 
   const nextOrder = existing && existing.length > 0 ? existing[0].sort_order + 1 : 0;
 
-  const { error } = await supabaseAdmin.from("project_images").insert({
+  const { error } = await getSupabaseAdmin().from("project_images").insert({
     project_id: projectId,
     image_url: imageUrl,
     sort_order: nextOrder,
@@ -202,7 +202,7 @@ export async function deleteProjectImage(imageId: string) {
   if (!creatorId) return { error: "Not authenticated." };
 
   // Verify ownership through project -> creator chain
-  const { data: image } = await supabaseAdmin
+  const { data: image } = await getSupabaseAdmin()
     .from("project_images")
     .select("project_id")
     .eq("id", imageId)
@@ -210,7 +210,7 @@ export async function deleteProjectImage(imageId: string) {
 
   if (!image) return { error: "Image not found." };
 
-  const { data: project } = await supabaseAdmin
+  const { data: project } = await getSupabaseAdmin()
     .from("projects")
     .select("creator_id")
     .eq("id", image.project_id)
@@ -220,7 +220,7 @@ export async function deleteProjectImage(imageId: string) {
     return { error: "Not authorized." };
   }
 
-  const { error } = await supabaseAdmin
+  const { error } = await getSupabaseAdmin()
     .from("project_images")
     .delete()
     .eq("id", imageId);

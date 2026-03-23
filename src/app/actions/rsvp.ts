@@ -1,10 +1,10 @@
 "use server";
 
-import { supabaseAdmin } from "@/lib/supabase-server";
+import { getSupabaseAdmin } from "@/lib/supabase-server";
 
 export async function rsvpToEvent(userId: string, eventId: string) {
   // Check if already RSVP'd
-  const { data: existing } = await supabaseAdmin
+  const { data: existing } = await getSupabaseAdmin()
     .from("rsvps")
     .select("id")
     .eq("user_id", userId)
@@ -15,7 +15,7 @@ export async function rsvpToEvent(userId: string, eventId: string) {
     return { success: true, alreadyRsvpd: true };
   }
 
-  const { error } = await supabaseAdmin.from("rsvps").insert({
+  const { error } = await getSupabaseAdmin().from("rsvps").insert({
     user_id: userId,
     event_id: eventId,
   });
@@ -29,7 +29,7 @@ export async function rsvpToEvent(userId: string, eventId: string) {
 }
 
 export async function checkRsvp(userId: string, eventId: string) {
-  const { data } = await supabaseAdmin
+  const { data } = await getSupabaseAdmin()
     .from("rsvps")
     .select("id")
     .eq("user_id", userId)

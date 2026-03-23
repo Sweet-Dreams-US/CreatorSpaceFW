@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { createServerSupabaseClient, supabaseAdmin } from "@/lib/supabase-server";
+import { createServerSupabaseClient, getSupabaseAdmin } from "@/lib/supabase-server";
 import { isAdmin } from "@/lib/admin";
 import { parseSocialField, getPlatformIcon, getPlatformColor } from "@/lib/social-parser";
 import { getCreatorProjects } from "@/app/actions/projects";
@@ -8,6 +8,7 @@ import { logProfileView } from "@/app/actions/tracking";
 import BadgeDisplay from "@/components/ui/BadgeDisplay";
 import ConnectButton from "@/components/ui/ConnectButton";
 import ShareProfile from "@/components/ui/ShareProfile";
+import { PersonJsonLd } from "@/components/seo/JsonLd";
 import type { Metadata } from "next";
 
 interface Creator {
@@ -51,7 +52,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const supabase = await createServerSupabaseClient();
   const { data } = await supabase
     .from("creators")
-    .select("first_name, last_name, bio")
+    .select("first_name, last_name, bio, avatar_url, skills, job_title, company")
     .eq("slug", slug)
     .single();
 
@@ -59,11 +60,31 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     return { title: "Creator Not Found" };
   }
 
+  const name = `${data.first_name} ${data.last_name}`;
+  const description =
+    data.bio ||
+    `${name} is a ${data.skills?.split(",")[0]?.trim() || "creator"} in Fort Wayne's creative community.`;
+  const profileUrl = `https://creatorspacefw.com/directory/${slug}`;
+
   return {
-    title: `${data.first_name} ${data.last_name} — Creator Space Fort Wayne`,
-    description:
-      data.bio ||
-      `${data.first_name} ${data.last_name} is a creator in the Fort Wayne community.`,
+    title: `${name} — Creator Space Fort Wayne`,
+    description,
+    alternates: { canonical: profileUrl },
+    openGraph: {
+      title: `${name} — Creator Space Fort Wayne`,
+      description,
+      url: profileUrl,
+      type: "profile",
+      ...(data.avatar_url && {
+        images: [{ url: data.avatar_url, width: 400, height: 400, alt: name }],
+      }),
+    },
+    twitter: {
+      card: data.avatar_url ? "summary" : "summary_large_image",
+      title: `${name} — Creator Space Fort Wayne`,
+      description,
+      ...(data.avatar_url && { images: [data.avatar_url] }),
+    },
   };
 }
 
@@ -101,16 +122,29 @@ export default async function CreatorProfilePage({ params }: PageProps) {
 
   const c = creator as Creator;
   const initials = `${c.first_name?.[0] || ""}${c.last_name?.[0] || ""}`.toUpperCase();
-  const skillTags = c.skills
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
 
   const socialLinks = parseSocialField(c.social);
   const projects = (await getCreatorProjects(c.id)) as Project[];
 
+  const skillTags = c.skills
+    .split(",")
+    .map((s: string) => s.trim())
+    .filter(Boolean);
+
   return (
     <main className="min-h-screen bg-[var(--color-black)] px-6 py-16">
+      <PersonJsonLd
+        name={`${c.first_name} ${c.last_name}`}
+        description={
+          c.bio ||
+          `${c.first_name} ${c.last_name} is a creator in Fort Wayne's creative community.`
+        }
+        url={`https://creatorspacefw.com/directory/${c.slug}`}
+        jobTitle={c.job_title}
+        worksFor={c.company}
+        image={c.avatar_url}
+        skills={skillTags}
+      />
       {/* Subtle gradient */}
       <div
         className="pointer-events-none fixed inset-0 opacity-20"
