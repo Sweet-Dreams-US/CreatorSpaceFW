@@ -32,6 +32,18 @@ export async function updateProfile(formData: FormData) {
     }
   }
 
+  // Parse teaching fields
+  const canTeachRaw = formData.get("can_teach") as string | null;
+  const wantsToLearnRaw = formData.get("wants_to_learn") as string | null;
+  let canTeach: string[] | undefined;
+  let wantsToLearn: string[] | undefined;
+  if (canTeachRaw) {
+    try { canTeach = JSON.parse(canTeachRaw); } catch { /* ignore */ }
+  }
+  if (wantsToLearnRaw) {
+    try { wantsToLearn = JSON.parse(wantsToLearnRaw); } catch { /* ignore */ }
+  }
+
   const updateData: Record<string, unknown> = {
     first_name: firstName,
     last_name: lastName,
@@ -43,6 +55,9 @@ export async function updateProfile(formData: FormData) {
     skills: (formData.get("skills") as string)?.trim() || "",
     updated_at: new Date().toISOString(),
   };
+
+  if (canTeach !== undefined) updateData.can_teach = canTeach;
+  if (wantsToLearn !== undefined) updateData.wants_to_learn = wantsToLearn;
 
   if (emailPrefs !== undefined) {
     updateData.email_prefs = emailPrefs;

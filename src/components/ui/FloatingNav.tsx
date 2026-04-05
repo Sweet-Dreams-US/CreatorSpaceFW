@@ -56,6 +56,12 @@ export default function FloatingNav() {
       <a href="/directory" className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-widest text-[var(--color-smoke)] transition-colors hover:text-[var(--color-white)]">
         Directory
       </a>
+      <a href="/collaborate" className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-widest text-[var(--color-smoke)] transition-colors hover:text-[var(--color-white)]">
+        Collaborate
+      </a>
+      <a href="/hire" className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-widest text-[var(--color-lime)] transition-colors hover:text-[var(--color-white)]">
+        Hire
+      </a>
       {userIsAdmin && (
         <a href="/admin" className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-widest text-[var(--color-coral)] transition-colors hover:text-[var(--color-white)]">
           Admin

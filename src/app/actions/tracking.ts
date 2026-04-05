@@ -34,6 +34,12 @@ export async function logProfileView(creatorId: string) {
       viewer_id: user?.id || null,
     });
 
+    // Award points to the creator whose profile was viewed
+    try {
+      const { awardPoints } = await import("./points");
+      await awardPoints(creatorId, "profile_view_received");
+    } catch { /* silent */ }
+
     return { success: true };
   } catch {
     return { success: false };

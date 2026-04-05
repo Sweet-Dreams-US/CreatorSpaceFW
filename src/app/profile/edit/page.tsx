@@ -57,6 +57,8 @@ interface CreatorProfile {
   slug: string | null;
   location: string | null;
   email_prefs: EmailPrefs | null;
+  can_teach: string[] | null;
+  wants_to_learn: string[] | null;
 }
 
 export default function ProfileEditPage() {
@@ -71,6 +73,8 @@ export default function ProfileEditPage() {
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [emailPrefs, setEmailPrefs] = useState<EmailPrefs>(DEFAULT_EMAIL_PREFS);
+  const [canTeach, setCanTeach] = useState<string[]>([]);
+  const [wantsToLearn, setWantsToLearn] = useState<string[]>([]);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -87,7 +91,7 @@ export default function ProfileEditPage() {
       const { data } = await supabase
         .from("creators")
         .select(
-          "id, first_name, last_name, company, job_title, social, website, bio, skills, avatar_url, slug, location, email_prefs"
+          "id, first_name, last_name, company, job_title, social, website, bio, skills, avatar_url, slug, location, email_prefs, can_teach, wants_to_learn"
         )
         .eq("auth_id", user!.id)
         .single();
@@ -103,6 +107,8 @@ export default function ProfileEditPage() {
               .filter(Boolean)
           );
         }
+        if (data.can_teach) setCanTeach(data.can_teach);
+        if (data.wants_to_learn) setWantsToLearn(data.wants_to_learn);
         if (data.email_prefs) {
           setEmailPrefs({ ...DEFAULT_EMAIL_PREFS, ...data.email_prefs });
         }
@@ -152,6 +158,8 @@ export default function ProfileEditPage() {
     const formData = new FormData(e.currentTarget);
     formData.set("skills", selectedSkills.join(", "));
     formData.set("email_prefs", JSON.stringify(emailPrefs));
+    formData.set("can_teach", JSON.stringify(canTeach));
+    formData.set("wants_to_learn", JSON.stringify(wantsToLearn));
 
     const result = await updateProfile(formData);
     setSaving(false);
@@ -365,6 +373,78 @@ export default function ProfileEditPage() {
                 })}
               </div>
             )}
+          </div>
+
+          {/* Skills Exchange */}
+          <div className="mt-4 border-t border-[var(--color-ash)] pt-6">
+            <h3 className="font-[family-name:var(--font-display)] text-lg text-[var(--color-white)]">
+              SKILLS EXCHANGE
+            </h3>
+            <p className="mt-1 font-[family-name:var(--font-mono)] text-[10px] text-[var(--color-smoke)]">
+              What can you teach others? What do you want to learn?
+            </p>
+            <div className="mt-4 space-y-4">
+              <div>
+                <p className="mb-2 font-[family-name:var(--font-mono)] text-xs text-[var(--color-lime)]">
+                  I can teach
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {SKILL_OPTIONS.map((skill) => {
+                    const selected = canTeach.includes(skill);
+                    return (
+                      <button
+                        key={skill}
+                        type="button"
+                        onClick={() =>
+                          setCanTeach((prev) =>
+                            selected
+                              ? prev.filter((s) => s !== skill)
+                              : [...prev, skill]
+                          )
+                        }
+                        className={`rounded-full px-3 py-1 font-[family-name:var(--font-mono)] text-[10px] transition-all ${
+                          selected
+                            ? "bg-[var(--color-lime)] text-[var(--color-black)] font-semibold"
+                            : "border border-[var(--color-ash)] text-[var(--color-smoke)] hover:border-[var(--color-lime)] hover:text-[var(--color-lime)]"
+                        }`}
+                      >
+                        {skill}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <div>
+                <p className="mb-2 font-[family-name:var(--font-mono)] text-xs text-[var(--color-sky)]">
+                  I want to learn
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {SKILL_OPTIONS.map((skill) => {
+                    const selected = wantsToLearn.includes(skill);
+                    return (
+                      <button
+                        key={skill}
+                        type="button"
+                        onClick={() =>
+                          setWantsToLearn((prev) =>
+                            selected
+                              ? prev.filter((s) => s !== skill)
+                              : [...prev, skill]
+                          )
+                        }
+                        className={`rounded-full px-3 py-1 font-[family-name:var(--font-mono)] text-[10px] transition-all ${
+                          selected
+                            ? "bg-[var(--color-sky)] text-[var(--color-black)] font-semibold"
+                            : "border border-[var(--color-ash)] text-[var(--color-smoke)] hover:border-[var(--color-sky)] hover:text-[var(--color-sky)]"
+                        }`}
+                      >
+                        {skill}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Notification Preferences */}

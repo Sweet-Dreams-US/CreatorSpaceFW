@@ -9,7 +9,12 @@ const NAV_ITEMS = [
   { href: "/admin/events", label: "Events", icon: "◈" },
   { href: "/admin/invites", label: "Invites", icon: "◇" },
   { href: "/admin/announcements", label: "Announcements", icon: "◎" },
-  { href: "/admin/analytics", label: "Analytics", icon: "◫" },
+  { href: "/admin/collaborate", label: "Collab Board", icon: "◫" },
+  { href: "/admin/resources", label: "Resources", icon: "◇" },
+  { href: "/admin/challenges", label: "Challenges", icon: "◈" },
+  { href: "/admin/inquiries", label: "Inquiries", icon: "✦" },
+  { href: "/admin/spotlight", label: "Spotlight", icon: "★" },
+  { href: "/admin/analytics", label: "Analytics", icon: "◉" },
   { href: "/admin/settings", label: "Settings", icon: "◐" },
 ];
 

@@ -25,6 +25,17 @@ export async function rsvpToEvent(userId: string, eventId: string) {
     return { success: false, error: error.message };
   }
 
+  // Award points
+  try {
+    const { awardPoints } = await import("./points");
+    const { data: creator } = await getSupabaseAdmin()
+      .from("creators")
+      .select("id")
+      .eq("auth_id", userId)
+      .single();
+    if (creator) await awardPoints(creator.id, "rsvp");
+  } catch { /* silent */ }
+
   return { success: true, alreadyRsvpd: false };
 }
 

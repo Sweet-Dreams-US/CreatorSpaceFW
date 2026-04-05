@@ -141,5 +141,21 @@ export async function respondToConnection(connectionId: string, status: "accepte
     return { error: "Failed to update connection." };
   }
 
+  // Award points to both creators on accepted connection
+  if (status === "accepted") {
+    try {
+      const { awardPoints } = await import("./points");
+      const { data: conn } = await getSupabaseAdmin()
+        .from("connections")
+        .select("from_creator_id, to_creator_id")
+        .eq("id", connectionId)
+        .single();
+      if (conn) {
+        await awardPoints(conn.from_creator_id, "connection_made");
+        await awardPoints(conn.to_creator_id, "connection_made");
+      }
+    } catch { /* silent */ }
+  }
+
   return { success: true };
 }

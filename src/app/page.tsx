@@ -8,6 +8,7 @@ import Scene5CommunityRiver from "@/components/scenes/Scene5CommunityRiver";
 import Scene6Constellation from "@/components/scenes/Scene6Constellation";
 // import SceneSocial from "@/components/scenes/SceneSocial";
 import Scene8Close from "@/components/scenes/Scene8Close";
+import SceneSpotlight from "@/components/scenes/SceneSpotlight";
 import CommandPalette from "@/components/ui/CommandPalette";
 import FloatingNav from "@/components/ui/FloatingNav";
 import MobileNav from "@/components/ui/MobileNav";
@@ -47,6 +48,7 @@ export default function Home() {
         <Scene3Landing />
         <Scene5CommunityRiver />
         <Scene4NextEvent dbEvent={nextEvent} />
+        <SceneSpotlight />
         <Scene6Constellation />
         {/* <SceneSocial /> */}
         <Scene8Close />
