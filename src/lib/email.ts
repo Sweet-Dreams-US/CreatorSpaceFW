@@ -168,6 +168,90 @@ function buildInquiryHtml(inquiry: {
 </html>`;
 }
 
+export async function sendSpotlightEmail(
+  to: string,
+  firstName: string,
+  spotlightCreatorName: string,
+  spotlightSlug: string
+) {
+  const profileUrl = `${SITE_URL}/directory/${spotlightSlug}`;
+
+  return getResend().emails.send({
+    from: FROM_EMAIL,
+    to,
+    subject: `${spotlightCreatorName} is this month's Creator of the Month`,
+    html: buildSpotlightHtml(firstName, spotlightCreatorName, profileUrl),
+  });
+}
+
+function buildSpotlightHtml(
+  firstName: string,
+  spotlightCreatorName: string,
+  profileUrl: string
+): string {
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;background-color:#0a0a0a;font-family:'Courier New',monospace;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#0a0a0a;padding:40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
+          <!-- Header -->
+          <tr>
+            <td style="padding:32px 0;text-align:center;">
+              <h1 style="margin:0;font-size:28px;font-weight:bold;color:#fafafa;letter-spacing:2px;">
+                CREATOR SPACE<br>FORT WAYNE
+              </h1>
+            </td>
+          </tr>
+          <!-- Body -->
+          <tr>
+            <td style="background-color:#141414;border-radius:12px;padding:40px 32px;border:1px solid #2a2a2a;">
+              <p style="margin:0 0 8px;font-size:12px;color:#fa9277;text-transform:uppercase;letter-spacing:4px;text-align:center;">
+                CREATOR OF THE MONTH
+              </p>
+              <h2 style="margin:0 0 24px;font-size:24px;font-weight:bold;color:#fafafa;text-align:center;">
+                ${spotlightCreatorName}
+              </h2>
+              <p style="margin:0 0 20px;font-size:16px;color:#fafafa;">
+                Hey ${firstName},
+              </p>
+              <p style="margin:0 0 20px;font-size:14px;color:#cccccc;line-height:1.6;">
+                We're excited to announce that <strong style="color:#fafafa;">${spotlightCreatorName}</strong> has been selected as this month's Creator Spotlight. Check out their profile to see what they've been working on and connect with them.
+              </p>
+              <!-- CTA Button -->
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="center" style="padding:12px 0 0;">
+                    <a href="${profileUrl}" style="display:inline-block;background-color:#fa9277;color:#0a0a0a;font-size:14px;font-weight:bold;text-decoration:none;padding:14px 40px;border-radius:100px;letter-spacing:1px;">
+                      VIEW THEIR PROFILE
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <!-- Footer -->
+          <tr>
+            <td style="padding:24px 0;text-align:center;">
+              <p style="margin:0;font-size:12px;color:#888888;">
+                Creator Space Fort Wayne — Free monthly meetups for Fort Wayne creators
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+}
+
 function buildAnnouncementHtml(firstName: string, subject: string, body: string): string {
   return `
 <!DOCTYPE html>

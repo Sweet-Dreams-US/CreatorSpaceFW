@@ -49,9 +49,29 @@ function parseSocialToFields(social: string | null): Record<string, string> {
   return fields;
 }
 
+const PLATFORM_PREFIXES: Record<string, string> = {
+  instagram: "https://instagram.com/",
+  tiktok: "https://tiktok.com/@",
+  youtube: "https://youtube.com/@",
+  twitter: "https://x.com/",
+  linkedin: "https://linkedin.com/in/",
+  facebook: "https://facebook.com/",
+};
+
+function normalizeField(key: string, value: string): string {
+  const v = value.trim();
+  if (!v) return "";
+  // If it's already a full URL, keep as-is
+  if (/^https?:\/\//i.test(v)) return v;
+  // Strip leading @ for URL construction
+  const handle = v.replace(/^@/, "");
+  const prefix = PLATFORM_PREFIXES[key];
+  return prefix ? `${prefix}${handle}` : v;
+}
+
 function fieldsToSocialString(fields: Record<string, string>): string {
   return Object.entries(fields)
-    .map(([, value]) => value.trim())
+    .map(([key, value]) => normalizeField(key, value))
     .filter(Boolean)
     .join(", ");
 }

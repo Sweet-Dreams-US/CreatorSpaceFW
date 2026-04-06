@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { gsap, ScrollTrigger } from "@/lib/gsap";
 import { useAuth } from "@/components/providers/AuthProvider";
-import { rsvpToEvent, checkRsvp } from "@/app/actions/rsvp";
-import { getEventAttendees } from "@/app/actions/events";
+import { rsvpToEvent, checkRsvp, getWaitlistPosition } from "@/app/actions/rsvp";
+import { getEventAttendees, getEventConfirmedCount } from "@/app/actions/events";
 import Link from "next/link";
 
 // Fallback event if no DB event is found
@@ -23,6 +23,7 @@ interface EventFromDB {
   date: string;
   location: string | null;
   facebook_url: string | null;
+  max_capacity: number | null;
 }
 
 interface Attendee {
@@ -80,10 +81,13 @@ export default function Scene4NextEvent({ dbEvent }: { dbEvent?: EventFromDB | n
   const spotlightRef = useRef<HTMLDivElement>(null);
   const [reelSpin, setReelSpin] = useState(false);
   const [rsvpState, setRsvpState] = useState<
-    "idle" | "loading" | "done" | "already"
+    "idle" | "loading" | "done" | "already" | "waitlisted"
   >("idle");
   const [attendees, setAttendees] = useState<Attendee[]>([]);
   const [rsvpCount, setRsvpCount] = useState(0);
+  const [confirmedCount, setConfirmedCount] = useState(0);
+  const [waitlistPosition, setWaitlistPosition] = useState(0);
+  const maxCapacity = dbEvent?.max_capacity ?? null;
   const { user, loading: authLoading } = useAuth();
 
   // Load attendees and check RSVP status
@@ -92,9 +96,16 @@ export default function Scene4NextEvent({ dbEvent }: { dbEvent?: EventFromDB | n
       setAttendees(data as Attendee[]);
       setRsvpCount(data.length);
     });
+    getEventConfirmedCount(event.id).then(setConfirmedCount);
     if (!user) return;
-    checkRsvp(user.id, event.id).then(({ hasRsvpd }) => {
-      if (hasRsvpd) setRsvpState("already");
+    checkRsvp(user.id, event.id).then(async ({ hasRsvpd, waitlisted }) => {
+      if (waitlisted) {
+        setRsvpState("waitlisted");
+        const { position } = await getWaitlistPosition(user.id, event.id);
+        setWaitlistPosition(position);
+      } else if (hasRsvpd) {
+        setRsvpState("already");
+      }
     });
   }, [user, event.id]);
 
@@ -108,12 +119,19 @@ export default function Scene4NextEvent({ dbEvent }: { dbEvent?: EventFromDB | n
     const result = await rsvpToEvent(user.id, event.id);
 
     if (result.success) {
-      setRsvpState(result.alreadyRsvpd ? "already" : "done");
-      // Refresh attendees
+      if (result.waitlisted) {
+        setRsvpState("waitlisted");
+        const { position } = await getWaitlistPosition(user.id, event.id);
+        setWaitlistPosition(position);
+      } else {
+        setRsvpState(result.alreadyRsvpd ? "already" : "done");
+      }
+      // Refresh attendees and counts
       getEventAttendees(event.id).then((data) => {
         setAttendees(data as Attendee[]);
         setRsvpCount(data.length);
       });
+      getEventConfirmedCount(event.id).then(setConfirmedCount);
     } else {
       setRsvpState("idle");
     }
@@ -188,13 +206,14 @@ export default function Scene4NextEvent({ dbEvent }: { dbEvent?: EventFromDB | n
   const rsvpLabel = () => {
     if (authLoading) return "RSVP →";
     if (rsvpState === "loading") return "SAVING...";
+    if (rsvpState === "waitlisted") return waitlistPosition > 0 ? `WAITLISTED (#${waitlistPosition})` : "WAITLISTED";
     if (rsvpState === "done" || rsvpState === "already") return "YOU'RE IN ✓";
     if (!user) return "SIGN IN TO RSVP →";
     return "RSVP →";
   };
 
   const rsvpDisabled =
-    rsvpState === "done" || rsvpState === "already" || rsvpState === "loading";
+    rsvpState === "done" || rsvpState === "already" || rsvpState === "loading" || rsvpState === "waitlisted";
 
   return (
     <section
@@ -285,7 +304,9 @@ export default function Scene4NextEvent({ dbEvent }: { dbEvent?: EventFromDB | n
         {rsvpCount > 0 && (
           <div className="event-reveal mt-8">
             <p className="mb-3 font-[family-name:var(--font-mono)] text-xs uppercase tracking-[0.2em] text-[var(--color-black)]/50">
-              {rsvpCount} Creator{rsvpCount !== 1 ? "s" : ""} Going
+              {maxCapacity
+                ? `${confirmedCount} / ${maxCapacity} Spots`
+                : `${rsvpCount} Creator${rsvpCount !== 1 ? "s" : ""} Going`}
             </p>
             <div className="flex flex-wrap items-center justify-center gap-1">
               {attendees.slice(0, 20).map((attendee, i) => (

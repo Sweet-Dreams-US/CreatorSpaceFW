@@ -21,6 +21,7 @@ export default function Home() {
     date: string;
     location: string | null;
     facebook_url: string | null;
+    max_capacity: number | null;
   } | null>(null);
 
   useEffect(() => {
@@ -28,7 +29,7 @@ export default function Home() {
       const supabase = createClient();
       const { data } = await supabase
         .from("events")
-        .select("id, title, date, location, facebook_url")
+        .select("id, title, date, location, facebook_url, max_capacity")
         .gte("date", new Date().toISOString())
         .order("date", { ascending: true })
         .limit(1)

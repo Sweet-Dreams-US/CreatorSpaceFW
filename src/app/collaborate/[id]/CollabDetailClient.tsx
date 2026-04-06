@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   respondToCollabPost,
   updateCollabPostStatus,
+  respondToCollabResponse,
 } from "@/app/actions/collaborate";
 
 interface Creator {
@@ -20,6 +21,7 @@ interface Response {
   id: string;
   creator_id: string;
   message: string | null;
+  status: "pending" | "accepted" | "declined";
   created_at: string;
   creators: Creator;
 }
@@ -45,7 +47,7 @@ export default function CollabDetailClient({
   isLoggedIn,
   hasResponded: initialHasResponded,
   postStatus,
-  responses,
+  responses: initialResponses,
 }: {
   postId: string;
   isOwner: boolean;
@@ -60,6 +62,8 @@ export default function CollabDetailClient({
   const [error, setError] = useState("");
   const [hasResponded, setHasResponded] = useState(initialHasResponded);
   const [statusUpdating, setStatusUpdating] = useState(false);
+  const [responses, setResponses] = useState<Response[]>(initialResponses);
+  const [updatingResponseId, setUpdatingResponseId] = useState<string | null>(null);
 
   async function handleRespond(e: React.FormEvent) {
     e.preventDefault();
@@ -81,6 +85,42 @@ export default function CollabDetailClient({
     await updateCollabPostStatus(postId, status);
     setStatusUpdating(false);
     router.refresh();
+  }
+
+  async function handleResponseAction(responseId: string, status: "accepted" | "declined") {
+    setUpdatingResponseId(responseId);
+    const result = await respondToCollabResponse(responseId, status);
+    setUpdatingResponseId(null);
+    if (result.error) {
+      setError(result.error);
+      return;
+    }
+    // Optimistic update
+    setResponses((prev) =>
+      prev.map((r) => (r.id === responseId ? { ...r, status } : r))
+    );
+    router.refresh();
+  }
+
+  function getStatusBadge(status: "pending" | "accepted" | "declined") {
+    if (status === "accepted") {
+      return (
+        <span className="inline-flex items-center gap-1 rounded-full bg-[#9dfa77]/15 px-2.5 py-0.5 font-[family-name:var(--font-mono)] text-[10px] font-semibold text-[#9dfa77]">
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+            <path d="M2 5L4 7L8 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          Accepted
+        </span>
+      );
+    }
+    if (status === "declined") {
+      return (
+        <span className="inline-flex items-center gap-1 rounded-full bg-white/5 px-2.5 py-0.5 font-[family-name:var(--font-mono)] text-[10px] font-semibold text-[var(--color-smoke)]">
+          Declined
+        </span>
+      );
+    }
+    return null;
   }
 
   return (
@@ -113,6 +153,12 @@ export default function CollabDetailClient({
             Responses ({responses.length})
           </h3>
 
+          {error && (
+            <p className="mt-2 font-[family-name:var(--font-mono)] text-xs text-red-400">
+              {error}
+            </p>
+          )}
+
           {responses.length === 0 ? (
             <p className="mt-4 font-[family-name:var(--font-mono)] text-xs text-[var(--color-smoke)]">
               No responses yet.
@@ -122,7 +168,13 @@ export default function CollabDetailClient({
               {responses.map((resp) => (
                 <div
                   key={resp.id}
-                  className="rounded-xl border border-white/5 bg-[var(--color-dark)] p-4 transition-all duration-300 hover:border-[var(--color-coral)]"
+                  className={`rounded-xl border bg-[var(--color-dark)] p-4 transition-all duration-300 ${
+                    resp.status === "accepted"
+                      ? "border-[#9dfa77]/20"
+                      : resp.status === "declined"
+                        ? "border-white/5 opacity-60"
+                        : "border-white/5 hover:border-[var(--color-coral)]"
+                  }`}
                 >
                   <div className="flex items-center gap-3">
                     <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[var(--color-charcoal)]">
@@ -140,20 +192,43 @@ export default function CollabDetailClient({
                       )}
                     </div>
                     <div className="flex-1">
-                      <Link
-                        href={
-                          resp.creators?.slug
-                            ? `/directory/${resp.creators.slug}`
-                            : "#"
-                        }
-                        className="font-[family-name:var(--font-display)] text-sm text-[var(--color-white)] transition-colors hover:text-[var(--color-coral)]"
-                      >
-                        {resp.creators?.first_name} {resp.creators?.last_name}
-                      </Link>
+                      <div className="flex items-center gap-2">
+                        <Link
+                          href={
+                            resp.creators?.slug
+                              ? `/directory/${resp.creators.slug}`
+                              : "#"
+                          }
+                          className="font-[family-name:var(--font-display)] text-sm text-[var(--color-white)] transition-colors hover:text-[var(--color-coral)]"
+                        >
+                          {resp.creators?.first_name} {resp.creators?.last_name}
+                        </Link>
+                        {getStatusBadge(resp.status)}
+                      </div>
                       <p className="font-[family-name:var(--font-mono)] text-[10px] text-[var(--color-smoke)]">
                         {timeAgo(resp.created_at)}
                       </p>
                     </div>
+
+                    {/* Accept / Decline buttons for pending responses */}
+                    {resp.status === "pending" && postStatus === "open" && (
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleResponseAction(resp.id, "accepted")}
+                          disabled={updatingResponseId === resp.id}
+                          className="rounded-full bg-[#9dfa77]/10 px-3 py-1.5 font-[family-name:var(--font-mono)] text-[10px] font-semibold text-[#9dfa77] transition-all hover:bg-[#9dfa77] hover:text-[var(--color-black)] disabled:opacity-50"
+                        >
+                          {updatingResponseId === resp.id ? "..." : "Accept"}
+                        </button>
+                        <button
+                          onClick={() => handleResponseAction(resp.id, "declined")}
+                          disabled={updatingResponseId === resp.id}
+                          className="rounded-full bg-white/5 px-3 py-1.5 font-[family-name:var(--font-mono)] text-[10px] font-semibold text-[var(--color-smoke)] transition-all hover:bg-white/10 disabled:opacity-50"
+                        >
+                          {updatingResponseId === resp.id ? "..." : "Decline"}
+                        </button>
+                      </div>
+                    )}
                   </div>
                   {resp.message && (
                     <p className="mt-3 font-[family-name:var(--font-mono)] text-xs text-[var(--color-mist)] leading-relaxed">

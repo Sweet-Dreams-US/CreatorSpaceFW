@@ -37,7 +37,9 @@ export default function MobileNav() {
     { label: "Skills Exchange", href: "/learn" },
     { label: "Hire a Creator", href: "/hire" },
     ...(userIsAdmin ? [{ label: "Admin Dashboard", href: "/admin" }] : []),
-    ...(user ? [{ label: "My Profile", href: "/profile/edit" }] : []),
+    ...(user
+      ? [{ label: "My Profile", href: "/profile/edit" }]
+      : [{ label: "Sign In", href: "/auth/login" }]),
   ];
 
   // Track active section

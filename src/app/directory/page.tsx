@@ -146,6 +146,33 @@ export default function DirectoryPage() {
           Every creator in the community.
         </p>
 
+        {/* Feature Navigation */}
+        <div className="mt-6 flex flex-wrap gap-2">
+          {[
+            { label: "Directory", href: "/directory", active: true },
+            { label: "Collaborate", href: "/collaborate" },
+            { label: "Resources", href: "/resources" },
+            { label: "Challenges", href: "/challenges" },
+            { label: "Skills Exchange", href: "/learn" },
+            { label: "Hire a Creator", href: "/hire", highlight: true },
+            { label: "Spotlight", href: "/spotlight" },
+          ].map((tab) => (
+            <Link
+              key={tab.href}
+              href={tab.href}
+              className={`rounded-full px-4 py-1.5 font-[family-name:var(--font-mono)] text-xs transition-all duration-200 ${
+                tab.active
+                  ? "bg-[var(--color-coral)] text-[var(--color-black)] font-semibold"
+                  : tab.highlight
+                  ? "border border-[var(--color-lime)] text-[var(--color-lime)] hover:bg-[var(--color-lime)] hover:text-[var(--color-black)]"
+                  : "border border-[var(--color-ash)] text-[var(--color-smoke)] hover:border-[var(--color-coral)] hover:text-[var(--color-coral)]"
+              }`}
+            >
+              {tab.label}
+            </Link>
+          ))}
+        </div>
+
         {/* Search */}
         <div className="mt-8">
           <input

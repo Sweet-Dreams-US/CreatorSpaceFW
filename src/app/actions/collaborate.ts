@@ -78,7 +78,13 @@ export async function getCollabPost(postId: string) {
     .eq("post_id", postId)
     .order("created_at", { ascending: true });
 
-  return { ...post, responses: responses || [] };
+  // Ensure status field is present (default 'pending' for old rows)
+  const responsesWithStatus = (responses || []).map((r: Record<string, unknown>) => ({
+    ...r,
+    status: r.status || "pending",
+  }));
+
+  return { ...post, responses: responsesWithStatus };
 }
 
 export async function respondToCollabPost(postId: string, message: string) {
@@ -162,6 +168,48 @@ export async function deleteCollabPost(postId: string) {
 
   await getSupabaseAdmin().from("collab_posts").delete().eq("id", postId);
   revalidatePath("/collaborate");
+  return { success: true };
+}
+
+export async function respondToCollabResponse(
+  responseId: string,
+  status: "accepted" | "declined"
+) {
+  const supabase = await createServerSupabaseClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const { data: creator } = await getSupabaseAdmin()
+    .from("creators")
+    .select("id")
+    .eq("auth_id", user.id)
+    .single();
+  if (!creator) return { error: "Creator profile not found" };
+
+  // Verify the current user owns the post this response belongs to
+  const { data: response } = await getSupabaseAdmin()
+    .from("collab_responses")
+    .select("id, post_id")
+    .eq("id", responseId)
+    .single();
+  if (!response) return { error: "Response not found" };
+
+  const { data: post } = await getSupabaseAdmin()
+    .from("collab_posts")
+    .select("creator_id")
+    .eq("id", response.post_id)
+    .single();
+  if (!post || post.creator_id !== creator.id) return { error: "Not authorized" };
+
+  const { error } = await getSupabaseAdmin()
+    .from("collab_responses")
+    .update({ status })
+    .eq("id", responseId);
+
+  if (error) return { error: error.message };
+  revalidatePath(`/collaborate/${response.post_id}`);
   return { success: true };
 }
 

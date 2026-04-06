@@ -2,6 +2,7 @@
 
 import { createServerSupabaseClient, getSupabaseAdmin } from "@/lib/supabase-server";
 import { isAdmin } from "@/lib/admin";
+import { sendSpotlightEmail } from "@/lib/email";
 
 const POINTS_MAP: Record<string, number> = {
   profile_view_received: 1,
@@ -20,6 +21,14 @@ export async function awardPoints(
   referenceId?: string
 ) {
   try {
+    // Only award points to claimed creators
+    const { data: creator } = await getSupabaseAdmin()
+      .from("creators")
+      .select("claimed")
+      .eq("id", creatorId)
+      .single();
+    if (!creator?.claimed) return;
+
     const points = POINTS_MAP[actionType] || 1;
     await getSupabaseAdmin().from("creator_points").insert({
       creator_id: creatorId,
@@ -94,6 +103,59 @@ export async function selectSpotlight(
     );
 
   if (error) return { error: error.message };
+
+  // Send spotlight announcement emails to all claimed creators
+  try {
+    const { data: spotlightCreator } = await getSupabaseAdmin()
+      .from("creators")
+      .select("first_name, last_name, slug")
+      .eq("id", creatorId)
+      .single();
+
+    if (spotlightCreator?.slug) {
+      const spotlightName = `${spotlightCreator.first_name} ${spotlightCreator.last_name}`;
+
+      // Get all claimed creators with email
+      const { data: claimedCreators } = await getSupabaseAdmin()
+        .from("creators")
+        .select("first_name, auth_id")
+        .not("auth_id", "is", null);
+
+      if (claimedCreators && claimedCreators.length > 0) {
+        // Fetch emails from auth users
+        const authIds = claimedCreators.map((c: { auth_id: string }) => c.auth_id);
+        const emailResults = await Promise.allSettled(
+          authIds.map(async (authId: string) => {
+            const { data } = await getSupabaseAdmin().auth.admin.getUserById(authId);
+            return data?.user?.email;
+          })
+        );
+
+        const emailSends: Promise<unknown>[] = [];
+        for (let i = 0; i < claimedCreators.length; i++) {
+          const emailResult = emailResults[i];
+          const email =
+            emailResult.status === "fulfilled" ? emailResult.value : null;
+          if (email) {
+            emailSends.push(
+              sendSpotlightEmail(
+                email,
+                claimedCreators[i].first_name || "Creator",
+                spotlightName,
+                spotlightCreator.slug
+              )
+            );
+          }
+        }
+
+        // Fire-and-forget — don't block the response
+        await Promise.allSettled(emailSends);
+      }
+    }
+  } catch {
+    // Email sending is non-blocking — never fail the spotlight selection
+  }
+
   return { success: true };
 }
 

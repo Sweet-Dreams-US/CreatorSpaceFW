@@ -117,8 +117,8 @@ export default function AdminSettingsPage() {
           <EnvRow name="NEXT_PUBLIC_SUPABASE_URL" set={!!process.env.NEXT_PUBLIC_SUPABASE_URL} />
           <EnvRow name="NEXT_PUBLIC_SUPABASE_ANON_KEY" set={!!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY} />
           <EnvRow name="SUPABASE_SERVICE_ROLE_KEY" set />
-          <EnvRow name="RESEND_API_KEY" set={false} />
-          <EnvRow name="NEXT_PUBLIC_SITE_URL" set={false} />
+          <EnvRow name="RESEND_API_KEY" set={!!process.env.RESEND_API_KEY} />
+          <EnvRow name="NEXT_PUBLIC_SITE_URL" set={!!process.env.NEXT_PUBLIC_SITE_URL} />
         </div>
       </div>
 

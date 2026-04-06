@@ -135,11 +135,45 @@ export async function getEventRsvpCount(eventId: string) {
   return count || 0;
 }
 
+export async function getEventConfirmedCount(eventId: string) {
+  const { count } = await getSupabaseAdmin()
+    .from("rsvps")
+    .select("*", { count: "exact", head: true })
+    .eq("event_id", eventId)
+    .in("status", ["confirmed", "checked_in"]);
+
+  return count || 0;
+}
+
+export async function getEventCheckInStats(eventId: string) {
+  const supabase = getSupabaseAdmin();
+
+  const statuses = ["confirmed", "waitlisted", "checked_in", "no_show"] as const;
+  const results: Record<string, number> = {};
+
+  for (const status of statuses) {
+    const { count } = await supabase
+      .from("rsvps")
+      .select("*", { count: "exact", head: true })
+      .eq("event_id", eventId)
+      .eq("status", status);
+    results[status] = count ?? 0;
+  }
+
+  return results as {
+    confirmed: number;
+    waitlisted: number;
+    checked_in: number;
+    no_show: number;
+  };
+}
+
 export async function getEventAttendees(eventId: string) {
   const { data } = await getSupabaseAdmin()
     .from("rsvps")
-    .select("user_id, created_at")
-    .eq("event_id", eventId);
+    .select("user_id, created_at, status, checked_in_at")
+    .eq("event_id", eventId)
+    .order("created_at", { ascending: true });
 
   if (!data || data.length === 0) return [];
 
@@ -149,5 +183,14 @@ export async function getEventAttendees(eventId: string) {
     .select("id, first_name, last_name, email, avatar_url, auth_id, slug")
     .in("auth_id", userIds);
 
-  return creators || [];
+  // Merge RSVP status onto creator records
+  return (creators || []).map((creator) => {
+    const rsvp = data.find((r) => r.user_id === creator.auth_id);
+    return {
+      ...creator,
+      rsvp_status: rsvp?.status ?? "confirmed",
+      checked_in_at: rsvp?.checked_in_at ?? null,
+      rsvp_created_at: rsvp?.created_at ?? null,
+    };
+  });
 }
