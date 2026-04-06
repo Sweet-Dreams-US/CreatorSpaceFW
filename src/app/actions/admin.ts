@@ -208,3 +208,60 @@ export async function checkEnvVars(): Promise<Record<string, boolean>> {
     NEXT_PUBLIC_SITE_URL: !!process.env.NEXT_PUBLIC_SITE_URL,
   };
 }
+
+// --- Role Management ---
+
+export async function updateCreatorRole(creatorId: string, role: string) {
+  await requireAdmin();
+
+  if (!["creator", "board", "admin"].includes(role)) {
+    return { error: "Invalid role" };
+  }
+
+  const { error } = await getSupabaseAdmin()
+    .from("creators")
+    .update({ role })
+    .eq("id", creatorId);
+
+  if (error) return { error: error.message };
+  revalidatePath("/admin/creators");
+  return { success: true };
+}
+
+// --- Platform Updates / Changelog ---
+
+export async function createPlatformUpdate(data: {
+  title: string;
+  description: string;
+  level: "admin" | "user";
+  version?: string;
+}) {
+  const user = await requireAdmin();
+
+  const { error } = await getSupabaseAdmin().from("platform_updates").insert({
+    title: data.title,
+    description: data.description,
+    level: data.level,
+    version: data.version || null,
+    created_by: user.id,
+  });
+
+  if (error) return { error: error.message };
+  revalidatePath("/admin");
+  return { success: true };
+}
+
+export async function getPlatformUpdates(level?: string) {
+  let query = getSupabaseAdmin()
+    .from("platform_updates")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(50);
+
+  if (level) {
+    query = query.eq("level", level);
+  }
+
+  const { data } = await query;
+  return data || [];
+}

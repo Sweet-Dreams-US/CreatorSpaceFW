@@ -159,6 +159,55 @@ export async function selectSpotlight(
   return { success: true };
 }
 
+// Points breakdown for a creator — grouped by action type
+export async function getPointsBreakdown(creatorId: string) {
+  const { data } = await getSupabaseAdmin()
+    .from("creator_points")
+    .select("action_type, points, created_at")
+    .eq("creator_id", creatorId)
+    .order("created_at", { ascending: false });
+
+  if (!data || data.length === 0) return { total: 0, byAction: {}, recent: [] };
+
+  const byAction: Record<string, { count: number; total: number }> = {};
+  let total = 0;
+
+  for (const row of data) {
+    total += row.points;
+    if (!byAction[row.action_type]) {
+      byAction[row.action_type] = { count: 0, total: 0 };
+    }
+    byAction[row.action_type].count++;
+    byAction[row.action_type].total += row.points;
+  }
+
+  return {
+    total,
+    byAction,
+    recent: data.slice(0, 20), // last 20 point events
+  };
+}
+
+// POINTS_MAP exposed for the earning guide
+export async function getPointsGuide() {
+  return Object.entries(POINTS_MAP).map(([action, points]) => ({
+    action,
+    points,
+    label: ACTION_LABELS[action] || action,
+  }));
+}
+
+const ACTION_LABELS: Record<string, string> = {
+  profile_view_received: "Someone views your profile",
+  rsvp: "RSVP to an event",
+  collab_post: "Post a collaboration request",
+  collab_response: "Respond to a collab post",
+  resource_listed: "List a resource",
+  connection_made: "Connect with a creator",
+  challenge_submission: "Submit to a challenge",
+  profile_completeness: "Complete a profile field",
+};
+
 export async function getCurrentSpotlight() {
   const now = new Date();
   const { data } = await getSupabaseAdmin()

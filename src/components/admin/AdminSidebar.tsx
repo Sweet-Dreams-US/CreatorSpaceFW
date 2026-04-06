@@ -3,23 +3,39 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-const NAV_ITEMS = [
+interface NavItem {
+  href: string;
+  label: string;
+  icon: string;
+  adminOnly?: boolean; // Only visible to full admins, not board members
+}
+
+const NAV_ITEMS: NavItem[] = [
   { href: "/admin", label: "Overview", icon: "◆" },
   { href: "/admin/creators", label: "Creators", icon: "◉" },
   { href: "/admin/events", label: "Events", icon: "◈" },
-  { href: "/admin/invites", label: "Invites", icon: "◇" },
-  { href: "/admin/announcements", label: "Announcements", icon: "◎" },
+  { href: "/admin/invites", label: "Invites", icon: "◇", adminOnly: true },
+  { href: "/admin/announcements", label: "Announcements", icon: "◎", adminOnly: true },
   { href: "/admin/collaborate", label: "Collab Board", icon: "◫" },
   { href: "/admin/resources", label: "Resources", icon: "◇" },
   { href: "/admin/challenges", label: "Challenges", icon: "◈" },
   { href: "/admin/inquiries", label: "Inquiries", icon: "✦" },
   { href: "/admin/spotlight", label: "Spotlight", icon: "★" },
   { href: "/admin/analytics", label: "Analytics", icon: "◉" },
-  { href: "/admin/settings", label: "Settings", icon: "◐" },
+  { href: "/admin/settings", label: "Settings", icon: "◐", adminOnly: true },
 ];
 
-export default function AdminSidebar() {
+interface AdminSidebarProps {
+  userRole?: string | null;
+}
+
+export default function AdminSidebar({ userRole }: AdminSidebarProps) {
   const pathname = usePathname();
+  const isFullAdmin = userRole === "admin";
+
+  const visibleItems = NAV_ITEMS.filter(
+    (item) => !item.adminOnly || isFullAdmin
+  );
 
   return (
     <aside className="fixed left-0 top-0 z-40 flex h-screen w-64 flex-col border-r border-[var(--color-ash)] bg-[var(--color-dark)]">
@@ -29,16 +45,23 @@ export default function AdminSidebar() {
           <p className="font-[family-name:var(--font-display)] text-lg text-[var(--color-white)] transition-colors group-hover:text-[var(--color-coral)]">
             CREATOR SPACE
           </p>
-          <p className="font-[family-name:var(--font-mono)] text-[10px] tracking-[3px] text-[var(--color-smoke)]">
-            ADMIN PANEL
-          </p>
+          <div className="flex items-center gap-2">
+            <p className="font-[family-name:var(--font-mono)] text-[10px] tracking-[3px] text-[var(--color-smoke)]">
+              ADMIN PANEL
+            </p>
+            {userRole === "board" && (
+              <span className="rounded-full bg-[var(--color-violet)]/15 px-2 py-0.5 font-[family-name:var(--font-mono)] text-[8px] uppercase tracking-wider text-[var(--color-violet)]">
+                Board
+              </span>
+            )}
+          </div>
         </Link>
       </div>
 
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto px-3 py-4">
         <ul className="space-y-1">
-          {NAV_ITEMS.map((item) => {
+          {visibleItems.map((item) => {
             const isActive =
               item.href === "/admin"
                 ? pathname === "/admin"

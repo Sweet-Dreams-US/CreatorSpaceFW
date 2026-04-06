@@ -135,6 +135,21 @@ export async function getEventRsvpCount(eventId: string) {
   return count || 0;
 }
 
+export async function getRsvpCountsBatch(eventIds: string[]) {
+  if (eventIds.length === 0) return {};
+  const { data } = await getSupabaseAdmin()
+    .from("rsvps")
+    .select("event_id")
+    .in("event_id", eventIds);
+
+  const counts: Record<string, number> = {};
+  for (const id of eventIds) counts[id] = 0;
+  for (const row of data || []) {
+    counts[row.event_id] = (counts[row.event_id] || 0) + 1;
+  }
+  return counts;
+}
+
 export async function getEventConfirmedCount(eventId: string) {
   const { count } = await getSupabaseAdmin()
     .from("rsvps")

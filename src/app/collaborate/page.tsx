@@ -2,11 +2,12 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
+import CommunityNav from "@/components/ui/CommunityNav";
 import { useAuth } from "@/components/providers/AuthProvider";
 import {
   createCollabPost,
   getCollabPosts,
-  getResponseCount,
+  getResponseCountsBatch,
 } from "@/app/actions/collaborate";
 
 const SKILL_CATEGORIES = [
@@ -24,6 +25,7 @@ const SKILL_CATEGORIES = [
   "Fashion",
   "Dance",
   "Film",
+  "Other",
 ];
 
 const TYPE_OPTIONS = ["All", "Looking For", "Offering"] as const;
@@ -87,6 +89,7 @@ export default function CollaboratePage() {
   const [formTitle, setFormTitle] = useState("");
   const [formDescription, setFormDescription] = useState("");
   const [formCategory, setFormCategory] = useState("");
+  const [formCustomCategory, setFormCustomCategory] = useState("");
   const [formBudget, setFormBudget] = useState("");
   const [formDeadline, setFormDeadline] = useState("");
 
@@ -103,13 +106,9 @@ export default function CollaboratePage() {
     );
     setPosts(data as CollabPost[]);
 
-    // Fetch response counts
-    const counts: Record<string, number> = {};
-    await Promise.all(
-      (data as CollabPost[]).map(async (post) => {
-        counts[post.id] = await getResponseCount(post.id);
-      })
-    );
+    // Fetch response counts (batch)
+    const postIds = (data as CollabPost[]).map((p) => p.id);
+    const counts = await getResponseCountsBatch(postIds);
     setResponseCounts(counts);
     setLoading(false);
   }, [typeFilter, categoryFilter, statusFilter]);
@@ -130,7 +129,7 @@ export default function CollaboratePage() {
       type: formType,
       title: formTitle.trim(),
       description: formDescription.trim() || undefined,
-      category: formCategory || undefined,
+      category: formCategory === "Other" ? (formCustomCategory || "Other") : (formCategory || undefined),
       budget: formBudget.trim() || undefined,
       deadline: formDeadline || undefined,
     });
@@ -162,13 +161,7 @@ export default function CollaboratePage() {
       />
 
       <div className="relative z-10 mx-auto max-w-5xl">
-        {/* Back link */}
-        <Link
-          href="/"
-          className="inline-block font-[family-name:var(--font-mono)] text-xs text-[var(--color-smoke)] transition-colors hover:text-[var(--color-coral)]"
-        >
-          &larr; Back to Home
-        </Link>
+        <CommunityNav />
 
         {/* Header */}
         <h1 className="mt-6 font-[family-name:var(--font-display)] text-5xl text-[var(--color-white)] sm:text-7xl">
@@ -177,6 +170,27 @@ export default function CollaboratePage() {
         <p className="mt-3 font-[family-name:var(--font-mono)] text-sm text-[var(--color-smoke)]">
           Find collaborators or offer your skills
         </p>
+
+        {/* Post CTA */}
+        <div className="mt-6">
+          {!authLoading && user ? (
+            <button
+              onClick={() => setShowModal(true)}
+              className="rounded-full bg-[var(--color-coral)] px-6 py-2.5 font-[family-name:var(--font-mono)] text-xs font-semibold text-[var(--color-black)] transition-all hover:shadow-[0_0_24px_rgba(250,146,119,0.4)]"
+            >
+              + Post a Collab Request
+            </button>
+          ) : (
+            !authLoading && (
+              <Link
+                href="/auth/login"
+                className="inline-block rounded-full border border-[var(--color-coral)] px-6 py-2.5 font-[family-name:var(--font-mono)] text-xs text-[var(--color-coral)] transition-all hover:bg-[var(--color-coral)] hover:text-[var(--color-black)]"
+              >
+                Sign in to post a collab request
+              </Link>
+            )
+          )}
+        </div>
 
         {/* Filter bar */}
         <div className="mt-8 space-y-4">
@@ -389,17 +403,6 @@ export default function CollaboratePage() {
         )}
       </div>
 
-      {/* Floating "+" button */}
-      {!authLoading && user && (
-        <button
-          onClick={() => setShowModal(true)}
-          aria-label="Create a collaboration post"
-          className="fixed bottom-8 right-8 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--color-coral)] text-2xl text-[var(--color-black)] shadow-[0_0_32px_rgba(250,146,119,0.4)] transition-all duration-300 hover:scale-110 hover:shadow-[0_0_48px_rgba(250,146,119,0.6)]"
-        >
-          +
-        </button>
-      )}
-
       {/* Create Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
@@ -486,6 +489,17 @@ export default function CollaboratePage() {
                   </option>
                 ))}
               </select>
+
+              {/* Custom category input when "Other" selected */}
+              {formCategory === "Other" && (
+                <input
+                  type="text"
+                  placeholder="Describe the type of creator..."
+                  value={formCustomCategory}
+                  onChange={(e) => setFormCustomCategory(e.target.value)}
+                  className="w-full rounded-lg border border-[var(--color-ash)] bg-[var(--color-dark)] px-5 py-3 font-[family-name:var(--font-mono)] text-sm text-[var(--color-white)] outline-none placeholder:text-[var(--color-smoke)] focus:border-[var(--color-coral)]"
+                />
+              )}
 
               {/* Budget + Deadline row */}
               <div className="grid grid-cols-2 gap-3">

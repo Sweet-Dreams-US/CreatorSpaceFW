@@ -52,6 +52,7 @@ export async function getResources(filters?: {
   let query = getSupabaseAdmin()
     .from("resources")
     .select("*, creators:creator_id(id, first_name, last_name, avatar_url, slug)")
+    .eq("hidden", false)
     .order("created_at", { ascending: false });
 
   if (filters?.category) query = query.eq("category", filters.category);
@@ -60,6 +61,15 @@ export async function getResources(filters?: {
   if (filters?.terms && filters.terms !== "all") query = query.eq("terms", filters.terms);
 
   const { data } = await query;
+  return data || [];
+}
+
+export async function getCreatorResources(creatorId: string) {
+  const { data } = await getSupabaseAdmin()
+    .from("resources")
+    .select("id, title, description, category, terms, price, availability, image_url")
+    .eq("creator_id", creatorId)
+    .order("created_at", { ascending: false });
   return data || [];
 }
 
@@ -223,6 +233,26 @@ export async function deleteResource(resourceId: string) {
   }
 
   await getSupabaseAdmin().from("resources").delete().eq("id", resourceId);
+  revalidatePath("/resources");
+  return { success: true };
+}
+
+export async function hideResource(resourceId: string) {
+  const supabase = await createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user || !isAdmin(user.email)) return { error: "Not authorized" };
+
+  await getSupabaseAdmin().from("resources").update({ hidden: true }).eq("id", resourceId);
+  revalidatePath("/resources");
+  return { success: true };
+}
+
+export async function unhideResource(resourceId: string) {
+  const supabase = await createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user || !isAdmin(user.email)) return { error: "Not authorized" };
+
+  await getSupabaseAdmin().from("resources").update({ hidden: false }).eq("id", resourceId);
   revalidatePath("/resources");
   return { success: true };
 }

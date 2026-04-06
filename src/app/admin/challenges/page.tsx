@@ -5,7 +5,7 @@ import {
   getAllChallenges,
   createChallenge,
   closeChallenge,
-  getSubmissionCount,
+  getSubmissionCountsBatch,
 } from "@/app/actions/challenges";
 
 interface Challenge {
@@ -39,6 +39,11 @@ export default function AdminChallengesPage() {
   const [formMonth, setFormMonth] = useState(now.getMonth() + 1);
   const [formYear, setFormYear] = useState(now.getFullYear());
   const [formDeadline, setFormDeadline] = useState("");
+  const [formStartsAt, setFormStartsAt] = useState("");
+  const [formEndsAt, setFormEndsAt] = useState("");
+  const [formRules, setFormRules] = useState("");
+  const [formHashtag, setFormHashtag] = useState("");
+  const [formInstagram, setFormInstagram] = useState("");
   const [creating, setCreating] = useState(false);
 
   const load = useCallback(async () => {
@@ -46,11 +51,9 @@ export default function AdminChallengesPage() {
     const data = await getAllChallenges();
     setChallenges(data as Challenge[]);
 
-    // Fetch submission counts
-    const counts: Record<string, number> = {};
-    for (const c of data) {
-      counts[c.id] = await getSubmissionCount(c.id);
-    }
+    // Fetch submission counts (batch)
+    const challengeIds = data.map((c: { id: string }) => c.id);
+    const counts = await getSubmissionCountsBatch(challengeIds);
     setSubmissionCounts(counts);
     setLoading(false);
   }, []);
@@ -69,6 +72,11 @@ export default function AdminChallengesPage() {
       month: formMonth,
       year: formYear,
       submission_deadline: formDeadline || undefined,
+      starts_at: formStartsAt || undefined,
+      ends_at: formEndsAt || undefined,
+      rules: formRules || undefined,
+      hashtag: formHashtag || undefined,
+      instagram_handle: formInstagram || undefined,
     });
     if (result.error) {
       setMessage(`Error: ${result.error}`);
@@ -77,6 +85,11 @@ export default function AdminChallengesPage() {
       setFormTitle("");
       setFormDescription("");
       setFormDeadline("");
+      setFormStartsAt("");
+      setFormEndsAt("");
+      setFormRules("");
+      setFormHashtag("");
+      setFormInstagram("");
       setShowForm(false);
       load();
     }
@@ -196,7 +209,7 @@ export default function AdminChallengesPage() {
               </div>
               <div>
                 <label className="mb-1 block font-[family-name:var(--font-mono)] text-xs uppercase tracking-wider text-[var(--color-smoke)]">
-                  Deadline
+                  Deadline (legacy)
                 </label>
                 <input
                   type="date"
@@ -206,6 +219,73 @@ export default function AdminChallengesPage() {
                 />
               </div>
             </div>
+
+            {/* Strict Timeline */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="mb-1 block font-[family-name:var(--font-mono)] text-xs uppercase tracking-wider text-[var(--color-smoke)]">
+                  Starts At *
+                </label>
+                <input
+                  type="datetime-local"
+                  value={formStartsAt}
+                  onChange={(e) => setFormStartsAt(e.target.value)}
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label className="mb-1 block font-[family-name:var(--font-mono)] text-xs uppercase tracking-wider text-[var(--color-smoke)]">
+                  Ends At *
+                </label>
+                <input
+                  type="datetime-local"
+                  value={formEndsAt}
+                  onChange={(e) => setFormEndsAt(e.target.value)}
+                  className={inputClass}
+                />
+              </div>
+            </div>
+
+            {/* Rules */}
+            <div>
+              <label className="mb-1 block font-[family-name:var(--font-mono)] text-xs uppercase tracking-wider text-[var(--color-smoke)]">
+                Rules & Requirements
+              </label>
+              <textarea
+                value={formRules}
+                onChange={(e) => setFormRules(e.target.value)}
+                placeholder="1. Submit original work only&#10;2. Tag @creatorspacefw on Instagram&#10;3. Use the hashtag below&#10;4. Must be completed within the timeline"
+                rows={5}
+                className={inputClass}
+              />
+            </div>
+
+            {/* Social Integration */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="mb-1 block font-[family-name:var(--font-mono)] text-xs uppercase tracking-wider text-[var(--color-smoke)]">
+                  Hashtag
+                </label>
+                <input
+                  value={formHashtag}
+                  onChange={(e) => setFormHashtag(e.target.value)}
+                  placeholder="#CSFWChallenge"
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label className="mb-1 block font-[family-name:var(--font-mono)] text-xs uppercase tracking-wider text-[var(--color-smoke)]">
+                  Instagram Handle
+                </label>
+                <input
+                  value={formInstagram}
+                  onChange={(e) => setFormInstagram(e.target.value)}
+                  placeholder="@creatorspacefw"
+                  className={inputClass}
+                />
+              </div>
+            </div>
+
             <button
               type="submit"
               disabled={creating}

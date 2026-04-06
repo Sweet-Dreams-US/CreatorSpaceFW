@@ -13,29 +13,58 @@ import { createClient } from "@/lib/supabase";
 interface AuthContextType {
   user: User | null;
   loading: boolean;
+  role: string | null; // 'creator' | 'board' | 'admin'
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
+  role: null,
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [role, setRole] = useState<string | null>(null);
 
   useEffect(() => {
     const supabase = createClient();
 
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    async function loadUser() {
+      const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
+
+      if (user) {
+        const { data: creator } = await supabase
+          .from("creators")
+          .select("role")
+          .eq("auth_id", user.id)
+          .single();
+        setRole(creator?.role || "creator");
+      }
+
       setLoading(false);
-    });
+    }
+
+    loadUser();
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      const newUser = session?.user ?? null;
+      setUser(newUser);
+
+      if (newUser) {
+        const { data: creator } = await supabase
+          .from("creators")
+          .select("role")
+          .eq("auth_id", newUser.id)
+          .single();
+        setRole(creator?.role || "creator");
+      } else {
+        setRole(null);
+      }
+
       setLoading(false);
     });
 
@@ -43,7 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading }}>
+    <AuthContext.Provider value={{ user, loading, role }}>
       {children}
     </AuthContext.Provider>
   );

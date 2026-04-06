@@ -5,7 +5,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { isAdmin } from "@/lib/admin";
-import AuthButton from "@/components/ui/AuthButton";
+import CommunityNav from "@/components/ui/CommunityNav";
 import BadgeDisplay from "@/components/ui/BadgeDisplay";
 
 const CATEGORIES = [
@@ -128,16 +128,7 @@ export default function DirectoryPage() {
       />
 
       <div className="relative z-10 mx-auto max-w-5xl">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <Link
-            href="/"
-            className="inline-block font-[family-name:var(--font-mono)] text-xs text-[var(--color-smoke)] transition-colors hover:text-[var(--color-coral)]"
-          >
-            ← Back to Home
-          </Link>
-          <AuthButton />
-        </div>
+        <CommunityNav />
 
         <h1 className="mt-6 font-[family-name:var(--font-display)] text-5xl text-[var(--color-white)] sm:text-7xl">
           THE DATABASE
@@ -145,33 +136,6 @@ export default function DirectoryPage() {
         <p className="mt-3 font-[family-name:var(--font-mono)] text-sm text-[var(--color-smoke)]">
           Every creator in the community.
         </p>
-
-        {/* Feature Navigation */}
-        <div className="mt-6 flex flex-wrap gap-2">
-          {[
-            { label: "Directory", href: "/directory", active: true },
-            { label: "Collaborate", href: "/collaborate" },
-            { label: "Resources", href: "/resources" },
-            { label: "Challenges", href: "/challenges" },
-            { label: "Skills Exchange", href: "/learn" },
-            { label: "Hire a Creator", href: "/hire", highlight: true },
-            { label: "Spotlight", href: "/spotlight" },
-          ].map((tab) => (
-            <Link
-              key={tab.href}
-              href={tab.href}
-              className={`rounded-full px-4 py-1.5 font-[family-name:var(--font-mono)] text-xs transition-all duration-200 ${
-                tab.active
-                  ? "bg-[var(--color-coral)] text-[var(--color-black)] font-semibold"
-                  : tab.highlight
-                  ? "border border-[var(--color-lime)] text-[var(--color-lime)] hover:bg-[var(--color-lime)] hover:text-[var(--color-black)]"
-                  : "border border-[var(--color-ash)] text-[var(--color-smoke)] hover:border-[var(--color-coral)] hover:text-[var(--color-coral)]"
-              }`}
-            >
-              {tab.label}
-            </Link>
-          ))}
-        </div>
 
         {/* Search */}
         <div className="mt-8">

@@ -6,7 +6,7 @@ import {
   updateEvent,
   deleteEvent,
   getAllEvents,
-  getEventRsvpCount,
+  getRsvpCountsBatch,
 } from "@/app/actions/events";
 
 interface Event {
@@ -34,11 +34,9 @@ export default function AdminEventsPage() {
     setEvents(data as Event[]);
     setLoading(false);
 
-    // Load RSVP counts
-    const counts: Record<string, number> = {};
-    for (const event of data) {
-      counts[event.id] = await getEventRsvpCount(event.id);
-    }
+    // Load RSVP counts (batch)
+    const eventIds = data.map((e: { id: string }) => e.id);
+    const counts = await getRsvpCountsBatch(eventIds);
     setRsvpCounts(counts);
   }, []);
 

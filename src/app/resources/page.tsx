@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
+import CommunityNav from "@/components/ui/CommunityNav";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { createResource, getResources } from "@/app/actions/resources";
 
@@ -161,13 +162,7 @@ export default function ResourcesPage() {
       />
 
       <div className="relative z-10 mx-auto max-w-5xl">
-        {/* Back link */}
-        <Link
-          href="/"
-          className="inline-block font-[family-name:var(--font-mono)] text-xs text-[var(--color-smoke)] transition-colors hover:text-[var(--color-coral)]"
-        >
-          &larr; Back to Home
-        </Link>
+        <CommunityNav />
 
         {/* Header */}
         <h1 className="mt-6 font-[family-name:var(--font-display)] text-5xl text-[var(--color-white)] sm:text-7xl">

@@ -1,7 +1,8 @@
 import Link from "next/link";
 import Image from "next/image";
-import { getChallengeWithSubmissions, getSubmissionCount } from "@/app/actions/challenges";
+import { getChallengeWithSubmissions, getSubmissionCount, getAcceptanceCount } from "@/app/actions/challenges";
 import ChallengeSubmitForm from "./ChallengeSubmitForm";
+import ChallengeAcceptButton from "./ChallengeAcceptButton";
 
 const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",
@@ -63,7 +64,10 @@ export default async function ChallengeDetailPage({
     );
   }
 
-  const count = await getSubmissionCount(id);
+  const [count, acceptCount] = await Promise.all([
+    getSubmissionCount(id),
+    getAcceptanceCount(id),
+  ]);
   const deadline = deadlineStatus(challenge.submission_deadline);
   const isActive = challenge.status === "active";
   const canSubmit = isActive && (
@@ -120,14 +124,74 @@ export default async function ChallengeDetailPage({
             </p>
           )}
 
-          <div className="mt-5 font-[family-name:var(--font-mono)] text-xs text-[var(--color-smoke)]">
-            {count} submission{count !== 1 ? "s" : ""}
+          {/* Timeline */}
+          {(challenge.starts_at || challenge.ends_at) && (
+            <div className="mt-5 flex flex-wrap gap-4">
+              {challenge.starts_at && (
+                <div className="rounded-lg border border-white/5 bg-[var(--color-black)] px-3 py-2">
+                  <div className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-wider text-[var(--color-smoke)]">
+                    Starts
+                  </div>
+                  <div className="font-[family-name:var(--font-mono)] text-sm text-[var(--color-white)]">
+                    {new Date(challenge.starts_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" })}
+                  </div>
+                </div>
+              )}
+              {challenge.ends_at && (
+                <div className="rounded-lg border border-white/5 bg-[var(--color-black)] px-3 py-2">
+                  <div className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-wider text-[var(--color-smoke)]">
+                    Ends
+                  </div>
+                  <div className="font-[family-name:var(--font-mono)] text-sm text-[var(--color-white)]">
+                    {new Date(challenge.ends_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" })}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Social tags */}
+          {(challenge.hashtag || challenge.instagram_handle) && (
+            <div className="mt-4 flex flex-wrap gap-3">
+              {challenge.hashtag && (
+                <span className="rounded-full bg-[var(--color-violet)]/10 px-3 py-1 font-[family-name:var(--font-mono)] text-xs text-[var(--color-violet)]">
+                  {challenge.hashtag}
+                </span>
+              )}
+              {challenge.instagram_handle && (
+                <a
+                  href={`https://instagram.com/${challenge.instagram_handle.replace("@", "")}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-full bg-[var(--color-coral)]/10 px-3 py-1 font-[family-name:var(--font-mono)] text-xs text-[var(--color-coral)] transition-colors hover:bg-[var(--color-coral)]/20"
+                >
+                  {challenge.instagram_handle}
+                </a>
+              )}
+            </div>
+          )}
+
+          <div className="mt-5 flex items-center gap-4 font-[family-name:var(--font-mono)] text-xs text-[var(--color-smoke)]">
+            <span>{count} submission{count !== 1 ? "s" : ""}</span>
+            <span>{acceptCount} accepted</span>
           </div>
         </div>
 
-        {/* Submit Form (client component) */}
-        {canSubmit && (
-          <ChallengeSubmitForm challengeId={id} />
+        {/* Rules */}
+        {challenge.rules && (
+          <div className="mt-6 rounded-xl border border-white/5 bg-[var(--color-dark)] p-6">
+            <h2 className="font-[family-name:var(--font-display)] text-lg text-[var(--color-white)]">
+              Rules & Requirements
+            </h2>
+            <div className="mt-3 whitespace-pre-line font-[family-name:var(--font-mono)] text-sm leading-relaxed text-[var(--color-mist)]">
+              {challenge.rules}
+            </div>
+          </div>
+        )}
+
+        {/* Accept + Submit */}
+        {isActive && (
+          <ChallengeAcceptButton challengeId={id} canSubmit={canSubmit} />
         )}
 
         {/* Submissions Gallery */}

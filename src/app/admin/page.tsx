@@ -1,12 +1,16 @@
 import Link from "next/link";
-import { getAdminStats } from "@/app/actions/admin";
+import { getAdminStats, getPlatformUpdates } from "@/app/actions/admin";
 import { getAllEvents } from "@/app/actions/events";
+import ChangelogPanel from "./ChangelogPanel";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminDashboard() {
-  const stats = await getAdminStats();
-  const events = await getAllEvents();
+  const [stats, events, updates] = await Promise.all([
+    getAdminStats(),
+    getAllEvents(),
+    getPlatformUpdates(),
+  ]);
   const upcomingEvents = events.filter(
     (e) => new Date(e.date) >= new Date()
   ).slice(0, 3);
@@ -80,6 +84,9 @@ export default async function AdminDashboard() {
           </div>
         </div>
       )}
+
+      {/* Platform Updates / Changelog */}
+      <ChangelogPanel updates={updates} />
 
       {/* Recent Signups */}
       {stats.recentSignups.length > 0 && (

@@ -52,6 +52,7 @@ export async function getCollabPosts(filters?: {
   let query = getSupabaseAdmin()
     .from("collab_posts")
     .select("*, creators:creator_id(id, first_name, last_name, avatar_url, slug)")
+    .eq("hidden", false)
     .order("created_at", { ascending: false });
 
   if (filters?.type) query = query.eq("type", filters.type);
@@ -220,4 +221,39 @@ export async function getResponseCount(postId: string) {
     .select("*", { count: "exact", head: true })
     .eq("post_id", postId);
   return count || 0;
+}
+
+export async function hideCollabPost(postId: string) {
+  const supabase = await createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user || !isAdmin(user.email)) return { error: "Not authorized" };
+
+  await getSupabaseAdmin().from("collab_posts").update({ hidden: true }).eq("id", postId);
+  revalidatePath("/collaborate");
+  return { success: true };
+}
+
+export async function unhideCollabPost(postId: string) {
+  const supabase = await createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user || !isAdmin(user.email)) return { error: "Not authorized" };
+
+  await getSupabaseAdmin().from("collab_posts").update({ hidden: false }).eq("id", postId);
+  revalidatePath("/collaborate");
+  return { success: true };
+}
+
+export async function getResponseCountsBatch(postIds: string[]) {
+  if (postIds.length === 0) return {};
+  const { data } = await getSupabaseAdmin()
+    .from("collab_responses")
+    .select("post_id")
+    .in("post_id", postIds);
+
+  const counts: Record<string, number> = {};
+  for (const id of postIds) counts[id] = 0;
+  for (const row of data || []) {
+    counts[row.post_id] = (counts[row.post_id] || 0) + 1;
+  }
+  return counts;
 }

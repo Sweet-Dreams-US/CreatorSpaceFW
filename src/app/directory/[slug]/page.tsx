@@ -4,6 +4,7 @@ import { createServerSupabaseClient, getSupabaseAdmin } from "@/lib/supabase-ser
 import { isAdmin } from "@/lib/admin";
 import { parseSocialField, getPlatformIcon, getPlatformColor } from "@/lib/social-parser";
 import { getCreatorProjects } from "@/app/actions/projects";
+import { getCreatorResources } from "@/app/actions/resources";
 import { logProfileView } from "@/app/actions/tracking";
 import BadgeDisplay from "@/components/ui/BadgeDisplay";
 import ConnectButton from "@/components/ui/ConnectButton";
@@ -124,7 +125,10 @@ export default async function CreatorProfilePage({ params }: PageProps) {
   const initials = `${c.first_name?.[0] || ""}${c.last_name?.[0] || ""}`.toUpperCase();
 
   const socialLinks = parseSocialField(c.social);
-  const projects = (await getCreatorProjects(c.id)) as Project[];
+  const [projects, resources] = await Promise.all([
+    getCreatorProjects(c.id) as Promise<Project[]>,
+    getCreatorResources(c.id),
+  ]);
 
   const skillTags = c.skills
     .split(",")
@@ -374,6 +378,49 @@ export default async function CreatorProfilePage({ params }: PageProps) {
                         →
                       </a>
                     </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Equipment & Resources Section */}
+        {resources.length > 0 && (
+          <div className="mt-16">
+            <h2 className="text-center font-[family-name:var(--font-display)] text-2xl text-[var(--color-white)]">
+              EQUIPMENT & RESOURCES
+            </h2>
+            <div className="mt-6 h-px w-full bg-[var(--color-ash)]" />
+
+            <div className="mt-8 grid gap-4 sm:grid-cols-2">
+              {resources.map((r: { id: string; title: string; description: string | null; category: string; terms: string; price: string | null; availability: string }) => (
+                <div
+                  key={r.id}
+                  className="rounded-xl border border-white/5 bg-[var(--color-dark)] p-5 transition-all duration-300 hover:border-[var(--color-sky)]"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="rounded-full bg-[var(--color-sky)]/10 px-2.5 py-0.5 font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-wider text-[var(--color-sky)]">
+                      {r.category}
+                    </span>
+                    <span className="rounded-full bg-white/5 px-2.5 py-0.5 font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-wider text-[var(--color-smoke)]">
+                      {r.terms}{r.price ? ` · ${r.price}` : ""}
+                    </span>
+                    <span
+                      className={`ml-auto h-2 w-2 rounded-full ${
+                        r.availability === "available"
+                          ? "bg-[var(--color-lime)]"
+                          : "bg-[var(--color-smoke)]"
+                      }`}
+                    />
+                  </div>
+                  <h3 className="mt-3 font-[family-name:var(--font-display)] text-sm text-[var(--color-white)]">
+                    {r.title}
+                  </h3>
+                  {r.description && (
+                    <p className="mt-1 line-clamp-2 font-[family-name:var(--font-mono)] text-xs text-[var(--color-smoke)]">
+                      {r.description}
+                    </p>
                   )}
                 </div>
               ))}

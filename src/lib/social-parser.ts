@@ -11,9 +11,9 @@ export function parseSocialField(social: string | null | undefined): SocialLink[
   const links: SocialLink[] = [];
   const seen = new Set<string>();
 
-  // Split by common delimiters
+  // Split by comma, newline, or " and " — NOT slashes (which break URLs)
   const parts = social
-    .split(/[,\/&]|\s+and\s+/i)
+    .split(/,|\n|\s+and\s+/i)
     .map((s) => s.trim())
     .filter(Boolean);
 
@@ -91,19 +91,6 @@ function parsePart(raw: string): SocialLink | null {
     };
   }
 
-  // Handle "IG & TikTok: handle" format
-  const multiPlatform = withoutPrefix.match(
-    /^([\w.]+)$/
-  );
-  if (multiPlatform) {
-    return {
-      platform: "instagram",
-      handle: `@${multiPlatform[1]}`,
-      url: `https://instagram.com/${multiPlatform[1]}`,
-      label: `@${multiPlatform[1]}`,
-    };
-  }
-
   return null;
 }
 
@@ -112,13 +99,18 @@ function parseUrl(urlStr: string): SocialLink | null {
     const url = new URL(urlStr);
     const host = url.hostname.replace("www.", "");
 
+    // Clean display label: show host + path without protocol/www/trailing slash
+    const cleanLabel = urlStr
+      .replace(/^https?:\/\/(www\.)?/, "")
+      .replace(/\/$/, "");
+
     if (host.includes("instagram.com")) {
       const handle = url.pathname.replace(/^\//, "").replace(/\/$/, "");
       return {
         platform: "instagram",
         handle: `@${handle}`,
         url: urlStr,
-        label: `@${handle}`,
+        label: cleanLabel,
       };
     }
 
@@ -128,7 +120,7 @@ function parseUrl(urlStr: string): SocialLink | null {
         platform: "tiktok",
         handle: handle.startsWith("@") ? handle : `@${handle}`,
         url: urlStr,
-        label: handle.startsWith("@") ? handle : `@${handle}`,
+        label: cleanLabel,
       };
     }
 
@@ -138,7 +130,7 @@ function parseUrl(urlStr: string): SocialLink | null {
         platform: "youtube",
         handle,
         url: urlStr,
-        label: handle,
+        label: cleanLabel,
       };
     }
 
@@ -148,7 +140,7 @@ function parseUrl(urlStr: string): SocialLink | null {
         platform: "twitter",
         handle: `@${handle}`,
         url: urlStr,
-        label: `@${handle}`,
+        label: cleanLabel,
       };
     }
 
@@ -158,7 +150,7 @@ function parseUrl(urlStr: string): SocialLink | null {
         platform: "linkedin",
         handle: path,
         url: urlStr,
-        label: path,
+        label: cleanLabel,
       };
     }
 
@@ -168,7 +160,7 @@ function parseUrl(urlStr: string): SocialLink | null {
         platform: "facebook",
         handle,
         url: urlStr,
-        label: handle,
+        label: cleanLabel,
       };
     }
 
@@ -176,7 +168,7 @@ function parseUrl(urlStr: string): SocialLink | null {
       platform: "website",
       handle: host,
       url: urlStr,
-      label: host,
+      label: cleanLabel,
     };
   } catch {
     return null;

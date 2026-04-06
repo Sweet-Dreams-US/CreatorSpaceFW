@@ -11,6 +11,11 @@ interface ChallengeData {
   month: number;
   year: number;
   submission_deadline?: string;
+  starts_at?: string;
+  ends_at?: string;
+  rules?: string;
+  hashtag?: string;
+  instagram_handle?: string;
 }
 
 export async function createChallenge(data: ChallengeData) {
@@ -26,6 +31,11 @@ export async function createChallenge(data: ChallengeData) {
     month: data.month,
     year: data.year,
     submission_deadline: data.submission_deadline || null,
+    starts_at: data.starts_at || null,
+    ends_at: data.ends_at || null,
+    rules: data.rules || null,
+    hashtag: data.hashtag || null,
+    instagram_handle: data.instagram_handle || null,
     created_by: user.id,
   });
 
@@ -155,10 +165,96 @@ export async function getAllChallenges() {
   return data || [];
 }
 
+export async function acceptChallenge(challengeId: string) {
+  const supabase = await createServerSupabaseClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const { data: creator } = await getSupabaseAdmin()
+    .from("creators")
+    .select("id")
+    .eq("auth_id", user.id)
+    .single();
+  if (!creator) return { error: "Creator profile not found" };
+
+  const { error } = await getSupabaseAdmin()
+    .from("challenge_acceptances")
+    .insert({ challenge_id: challengeId, creator_id: creator.id });
+
+  if (error) {
+    if (error.code === "23505") return { success: true }; // Already accepted
+    return { error: error.message };
+  }
+
+  revalidatePath(`/challenges/${challengeId}`);
+  return { success: true };
+}
+
+export async function hasAcceptedChallenge(challengeId: string, userId: string) {
+  const { data: creator } = await getSupabaseAdmin()
+    .from("creators")
+    .select("id")
+    .eq("auth_id", userId)
+    .single();
+  if (!creator) return false;
+
+  const { data } = await getSupabaseAdmin()
+    .from("challenge_acceptances")
+    .select("id")
+    .eq("challenge_id", challengeId)
+    .eq("creator_id", creator.id)
+    .single();
+
+  return !!data;
+}
+
+export async function getAcceptanceCount(challengeId: string) {
+  const { count } = await getSupabaseAdmin()
+    .from("challenge_acceptances")
+    .select("*", { count: "exact", head: true })
+    .eq("challenge_id", challengeId);
+  return count || 0;
+}
+
 export async function getSubmissionCount(challengeId: string) {
   const { count } = await getSupabaseAdmin()
     .from("challenge_submissions")
     .select("*", { count: "exact", head: true })
     .eq("challenge_id", challengeId);
   return count || 0;
+}
+
+export async function hideSubmission(submissionId: string) {
+  const supabase = await createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user || !isAdmin(user.email)) return { error: "Not authorized" };
+
+  await getSupabaseAdmin().from("challenge_submissions").update({ hidden: true }).eq("id", submissionId);
+  return { success: true };
+}
+
+export async function deleteSubmission(submissionId: string) {
+  const supabase = await createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user || !isAdmin(user.email)) return { error: "Not authorized" };
+
+  await getSupabaseAdmin().from("challenge_submissions").delete().eq("id", submissionId);
+  return { success: true };
+}
+
+export async function getSubmissionCountsBatch(challengeIds: string[]) {
+  if (challengeIds.length === 0) return {};
+  const { data } = await getSupabaseAdmin()
+    .from("challenge_submissions")
+    .select("challenge_id")
+    .in("challenge_id", challengeIds);
+
+  const counts: Record<string, number> = {};
+  for (const id of challengeIds) counts[id] = 0;
+  for (const row of data || []) {
+    counts[row.challenge_id] = (counts[row.challenge_id] || 0) + 1;
+  }
+  return counts;
 }

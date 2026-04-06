@@ -142,4 +142,126 @@ export async function referCreators(inquiryId: string, creatorIds: string[]) {
   return { success: true };
 }
 
-export { ADMIN_EMAILS };
+// Refer an inquiry to a specific creator — creates a private job lead and sends email
+export async function referInquiryToCreator(
+  inquiryId: string,
+  creatorId: string,
+  note?: string
+) {
+  const supabase = await createServerSupabaseClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user || !isAdmin(user.email)) return { error: "Not authorized" };
+
+  // Get inquiry details
+  const { data: inquiry } = await getSupabaseAdmin()
+    .from("business_inquiries")
+    .select("*")
+    .eq("id", inquiryId)
+    .single();
+  if (!inquiry) return { error: "Inquiry not found" };
+
+  // Get creator details
+  const { data: creator } = await getSupabaseAdmin()
+    .from("creators")
+    .select("id, first_name, auth_id")
+    .eq("id", creatorId)
+    .single();
+  if (!creator) return { error: "Creator not found" };
+
+  // Create referral record
+  const { error } = await getSupabaseAdmin()
+    .from("inquiry_referrals")
+    .insert({
+      inquiry_id: inquiryId,
+      creator_id: creatorId,
+      note: note || null,
+    });
+
+  if (error) {
+    if (error.code === "23505") return { error: "Already referred to this creator" };
+    return { error: error.message };
+  }
+
+  // Update inquiry status
+  await getSupabaseAdmin()
+    .from("business_inquiries")
+    .update({ status: "referred", updated_at: new Date().toISOString() })
+    .eq("id", inquiryId);
+
+  // Send email to creator if they have an account
+  if (creator.auth_id) {
+    try {
+      const { data: authUser } = await getSupabaseAdmin().auth.admin.getUserById(creator.auth_id);
+      if (authUser?.user?.email) {
+        const { sendJobReferralEmail } = await import("@/lib/email");
+        await sendJobReferralEmail(
+          authUser.user.email,
+          creator.first_name || "Creator",
+          inquiry.business_name,
+          inquiry.project_description,
+          note
+        );
+      }
+    } catch {
+      // Email is non-blocking
+    }
+  }
+
+  revalidatePath("/admin/inquiries");
+  return { success: true };
+}
+
+// Get job leads for a specific creator (for their profile)
+export async function getMyJobLeads() {
+  const supabase = await createServerSupabaseClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data: creator } = await getSupabaseAdmin()
+    .from("creators")
+    .select("id")
+    .eq("auth_id", user.id)
+    .single();
+  if (!creator) return [];
+
+  const { data } = await getSupabaseAdmin()
+    .from("inquiry_referrals")
+    .select(`
+      id, note, status, created_at,
+      business_inquiries:inquiry_id(
+        id, business_name, contact_name, email, project_description,
+        budget_range, timeline, creator_types
+      )
+    `)
+    .eq("creator_id", creator.id)
+    .order("created_at", { ascending: false });
+
+  return data || [];
+}
+
+// Search creators for referral (admin use)
+export async function searchCreatorsForReferral(query: string) {
+  const supabase = await createServerSupabaseClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user || !isAdmin(user.email)) return [];
+
+  const { data } = await getSupabaseAdmin()
+    .from("creators")
+    .select("id, first_name, last_name, skills, avatar_url, slug")
+    .or(`first_name.ilike.%${query}%,last_name.ilike.%${query}%,skills.ilike.%${query}%`)
+    .limit(10);
+
+  return data || [];
+}
+
+// Can't export non-async values from "use server" files
+// Use getAdminEmails() instead
+export async function getAdminEmails() {
+  return ADMIN_EMAILS;
+}

@@ -1,10 +1,10 @@
 # Creator Space Fort Wayne
 
-> Fort Wayne, Indiana's creative community directory. A free platform connecting local creators — videographers, photographers, designers, musicians, developers, audio engineers, animators, and more.
+> Fort Wayne, Indiana's creative community platform. A free platform connecting local creators — videographers, photographers, designers, musicians, developers, audio engineers, animators, and more.
 
 ## What is Creator Space Fort Wayne?
 
-Creator Space Fort Wayne is a community-built directory of creative professionals in Fort Wayne, Indiana. The platform helps local creators find each other, collaborate on projects, and grow together through free monthly meetups.
+Creator Space Fort Wayne is a community platform for creative professionals in Fort Wayne, Indiana. Beyond a directory, it offers collaboration tools, monthly challenges, a skills exchange, a public leaderboard, event management, and a business inquiry system for hiring local creators.
 
 ## Key Facts
 
@@ -12,7 +12,25 @@ Creator Space Fort Wayne is a community-built directory of creative professional
 - Website: https://creatorspacefw.com
 - Cost: Free to join, free to use
 - Directory: https://creatorspacefw.com/directory
+- Collaborate: https://creatorspacefw.com/collaborate
+- Challenges: https://creatorspacefw.com/challenges
+- Leaderboard: https://creatorspacefw.com/leaderboard
+- Skills Exchange: https://creatorspacefw.com/learn
+- Hire a Creator: https://creatorspacefw.com/hire
+- Spotlight: https://creatorspacefw.com/spotlight
 - Categories: Video, Photo, Editor, VFX, Code, Music, Aerial, Design, Writing, Audio Engineering, Animation, Marketing, Business
+
+## Features
+
+- Creator Directory: Browse 140+ local creators by skill, name, or company
+- Collaboration Board: Post project needs or offer your skills to other creators
+- Monthly Challenges: Accept creative challenges with deadlines, rules, and social hashtags
+- Skills Exchange: Teach what you know, learn what you don't — find matching creators
+- Leaderboard: Earn points for community participation, see top creators
+- Creator Spotlight: Monthly featured creator selected from the leaderboard
+- Business Inquiries: Businesses can submit hire requests, admins route to matching creators
+- Event Management: RSVP to meetups with waitlist support and iPad check-in
+- Equipment & Resources: Creators list available gear and studio space on their profiles
 
 ## Who is this for?
 
@@ -21,17 +39,9 @@ Creator Space Fort Wayne is a community-built directory of creative professional
 - Anyone interested in Fort Wayne's creative community
 - Creators looking for collaborators on projects
 
-## How to find a creator
-
-Visit https://creatorspacefw.com/directory to browse all creators. You can filter by skill category (Video, Photo, Design, Music, Code, etc.) or search by name, company, or skill.
-
 ## How to join
 
-Sign up free at https://creatorspacefw.com/auth/signup to claim your spot in the directory. Add your skills, bio, portfolio links, and social media to your profile.
-
-## Monthly meetups
-
-Creator Space Fort Wayne hosts free monthly meetups for creators of all kinds. Events are open to anyone in the Fort Wayne creative community.
+Sign up free at https://creatorspacefw.com/auth/signup to claim your spot. Add your skills, bio, portfolio, social links, and equipment to your profile.
 
 ## Contact
 

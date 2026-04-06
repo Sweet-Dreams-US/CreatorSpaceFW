@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import CommunityNav from "@/components/ui/CommunityNav";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { getAvailableExchanges, getSkillExchangeMatches } from "@/app/actions/learn";
 import { sendConnectionRequest } from "@/app/actions/connections";
@@ -96,19 +97,10 @@ export default function LearnPage() {
   return (
     <main className="min-h-screen bg-[var(--color-black)] px-6 pb-24 pt-32">
       <div className="mx-auto max-w-5xl">
-        {/* Back link */}
-        <Link
-          href="/"
-          className="mb-10 inline-flex items-center gap-2 font-[family-name:var(--font-mono)] text-xs text-[var(--color-smoke)] transition-colors hover:text-[var(--color-coral)]"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="15 18 9 12 15 6" />
-          </svg>
-          Back to home
-        </Link>
+        <CommunityNav />
 
         {/* Header */}
-        <h1 className="font-[family-name:var(--font-display)] text-4xl tracking-tight text-[var(--color-white)] sm:text-5xl">
+        <h1 className="mt-6 font-[family-name:var(--font-display)] text-4xl tracking-tight text-[var(--color-white)] sm:text-5xl">
           SKILLS EXCHANGE
         </h1>
         <p className="mt-3 max-w-xl font-[family-name:var(--font-mono)] text-sm text-[var(--color-smoke)]">
