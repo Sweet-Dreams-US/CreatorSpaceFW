@@ -182,7 +182,7 @@ export default function LeaderboardPage() {
         )}
 
         {/* My Points Breakdown (logged in only) */}
-        {isLoggedIn && myBreakdown && (
+        {canView && myBreakdown && (
           <div className="mt-8 rounded-xl border border-[var(--color-coral)]/20 bg-[var(--color-dark)] p-6">
             <div className="flex items-center justify-between">
               <h2 className="font-[family-name:var(--font-display)] text-xl text-[var(--color-white)]">
