@@ -5,7 +5,6 @@ import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { isAdmin } from "@/lib/admin";
 import { getEventAttendees, getEventCheckInStats } from "@/app/actions/events";
-import { getNextEvent } from "@/app/actions/events";
 import { checkInToEvent, markNoShow, promoteFromWaitlist } from "@/app/actions/rsvp";
 
 interface Attendee {

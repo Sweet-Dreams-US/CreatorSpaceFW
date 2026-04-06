@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { checkEnvVars } from "@/app/actions/admin";
 
 export default function AdminSettingsPage() {
   const [adminEmails, setAdminEmails] = useState([
@@ -8,6 +9,11 @@ export default function AdminSettingsPage() {
     "zach@topspheremedia.com",
   ]);
   const [newEmail, setNewEmail] = useState("");
+  const [envStatus, setEnvStatus] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    checkEnvVars().then(setEnvStatus);
+  }, []);
   const [saved, setSaved] = useState(false);
 
   const addEmail = () => {
@@ -114,11 +120,11 @@ export default function AdminSettingsPage() {
         </p>
 
         <div className="mt-4 space-y-2">
-          <EnvRow name="NEXT_PUBLIC_SUPABASE_URL" set={!!process.env.NEXT_PUBLIC_SUPABASE_URL} />
-          <EnvRow name="NEXT_PUBLIC_SUPABASE_ANON_KEY" set={!!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY} />
-          <EnvRow name="SUPABASE_SERVICE_ROLE_KEY" set />
-          <EnvRow name="RESEND_API_KEY" set={!!process.env.RESEND_API_KEY} />
-          <EnvRow name="NEXT_PUBLIC_SITE_URL" set={!!process.env.NEXT_PUBLIC_SITE_URL} />
+          <EnvRow name="NEXT_PUBLIC_SUPABASE_URL" set={envStatus["NEXT_PUBLIC_SUPABASE_URL"] ?? false} />
+          <EnvRow name="NEXT_PUBLIC_SUPABASE_ANON_KEY" set={envStatus["NEXT_PUBLIC_SUPABASE_ANON_KEY"] ?? false} />
+          <EnvRow name="SUPABASE_SERVICE_ROLE_KEY" set={envStatus["SUPABASE_SERVICE_ROLE_KEY"] ?? false} />
+          <EnvRow name="RESEND_API_KEY" set={envStatus["RESEND_API_KEY"] ?? false} />
+          <EnvRow name="NEXT_PUBLIC_SITE_URL" set={envStatus["NEXT_PUBLIC_SITE_URL"] ?? false} />
         </div>
       </div>
 

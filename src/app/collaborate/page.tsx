@@ -393,6 +393,7 @@ export default function CollaboratePage() {
       {!authLoading && user && (
         <button
           onClick={() => setShowModal(true)}
+          aria-label="Create a collaboration post"
           className="fixed bottom-8 right-8 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--color-coral)] text-2xl text-[var(--color-black)] shadow-[0_0_32px_rgba(250,146,119,0.4)] transition-all duration-300 hover:scale-110 hover:shadow-[0_0_48px_rgba(250,146,119,0.6)]"
         >
           +

@@ -55,9 +55,9 @@ export async function getResources(filters?: {
     .order("created_at", { ascending: false });
 
   if (filters?.category) query = query.eq("category", filters.category);
-  if (filters?.availability) query = query.eq("availability", filters.availability);
-  else query = query.eq("availability", "available");
-  if (filters?.terms) query = query.eq("terms", filters.terms);
+  if (filters?.availability && filters.availability !== "all") query = query.eq("availability", filters.availability);
+  else if (!filters?.availability) query = query.eq("availability", "available");
+  if (filters?.terms && filters.terms !== "all") query = query.eq("terms", filters.terms);
 
   const { data } = await query;
   return data || [];
@@ -121,6 +121,25 @@ export async function handleResourceRequest(
   } = await supabase.auth.getUser();
   if (!user) return { error: "Not authenticated" };
 
+  // Verify current user owns the resource
+  const { data: creator } = await getSupabaseAdmin()
+    .from("creators")
+    .select("id")
+    .eq("auth_id", user.id)
+    .single();
+  if (!creator) return { error: "Creator profile not found" };
+
+  const { data: req } = await getSupabaseAdmin()
+    .from("resource_requests")
+    .select("resource_id, resources:resource_id(creator_id)")
+    .eq("id", requestId)
+    .single();
+
+  const resource = req?.resources as unknown as { creator_id: string } | null;
+  if (!resource || (resource.creator_id !== creator.id && !isAdmin(user.email))) {
+    return { error: "Not authorized" };
+  }
+
   const { error } = await getSupabaseAdmin()
     .from("resource_requests")
     .update({ status })
@@ -153,6 +172,23 @@ export async function updateResource(resourceId: string, data: Partial<ResourceD
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { error: "Not authenticated" };
+
+  // Verify ownership
+  const { data: creator } = await getSupabaseAdmin()
+    .from("creators")
+    .select("id")
+    .eq("auth_id", user.id)
+    .single();
+  if (!creator) return { error: "Creator profile not found" };
+
+  const { data: resource } = await getSupabaseAdmin()
+    .from("resources")
+    .select("creator_id")
+    .eq("id", resourceId)
+    .single();
+  if (!resource || (resource.creator_id !== creator.id && !isAdmin(user.email))) {
+    return { error: "Not authorized" };
+  }
 
   const { error } = await getSupabaseAdmin()
     .from("resources")

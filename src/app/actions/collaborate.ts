@@ -56,8 +56,8 @@ export async function getCollabPosts(filters?: {
 
   if (filters?.type) query = query.eq("type", filters.type);
   if (filters?.category) query = query.eq("category", filters.category);
-  if (filters?.status) query = query.eq("status", filters.status);
-  else query = query.eq("status", "open");
+  if (filters?.status && filters.status !== "all") query = query.eq("status", filters.status);
+  else if (!filters?.status) query = query.eq("status", "open");
 
   const { data } = await query;
   return data || [];
@@ -129,12 +129,13 @@ export async function updateCollabPostStatus(postId: string, status: string) {
     .select("id")
     .eq("auth_id", user.id)
     .single();
+  if (!creator) return { error: "Creator profile not found" };
 
   const { error } = await getSupabaseAdmin()
     .from("collab_posts")
     .update({ status, updated_at: new Date().toISOString() })
     .eq("id", postId)
-    .eq("creator_id", creator?.id || "");
+    .eq("creator_id", creator.id);
 
   if (error) return { error: error.message };
   revalidatePath("/collaborate");

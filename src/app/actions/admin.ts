@@ -112,6 +112,7 @@ export async function adminUpdateCreator(
 }
 
 export async function getAllCreatorsAdmin() {
+  await requireAdmin();
   const { data, error } = await getSupabaseAdmin()
     .from("creators")
     .select("*")
@@ -122,6 +123,7 @@ export async function getAllCreatorsAdmin() {
 }
 
 export async function getAdminStats() {
+  await requireAdmin();
   const { count: totalCreators } = await getSupabaseAdmin()
     .from("creators")
     .select("*", { count: "exact", head: true });
@@ -195,4 +197,14 @@ export async function exportCreatorsCSV() {
     .join("\n");
 
   return { success: true, csv };
+}
+
+export async function checkEnvVars(): Promise<Record<string, boolean>> {
+  return {
+    NEXT_PUBLIC_SUPABASE_URL: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    SUPABASE_SERVICE_ROLE_KEY: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+    RESEND_API_KEY: !!process.env.RESEND_API_KEY,
+    NEXT_PUBLIC_SITE_URL: !!process.env.NEXT_PUBLIC_SITE_URL,
+  };
 }

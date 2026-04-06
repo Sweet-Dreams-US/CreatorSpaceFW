@@ -1,5 +1,14 @@
 import { Resend } from "resend";
 
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 // Lazy-init to avoid build errors when RESEND_API_KEY isn't set
 let _resend: Resend | null = null;
 function getResend(): Resend {
@@ -150,13 +159,13 @@ function buildInquiryHtml(inquiry: {
         </td></tr>
         <tr><td style="background-color:#141414;border-radius:12px;padding:40px 32px;border:1px solid #2a2a2a;">
           <p style="margin:0 0 8px;font-size:12px;color:#888;text-transform:uppercase;letter-spacing:1px;">Business</p>
-          <p style="margin:0 0 20px;font-size:16px;color:#fafafa;">${inquiry.business_name}</p>
+          <p style="margin:0 0 20px;font-size:16px;color:#fafafa;">${escapeHtml(inquiry.business_name)}</p>
           <p style="margin:0 0 8px;font-size:12px;color:#888;text-transform:uppercase;letter-spacing:1px;">Contact</p>
-          <p style="margin:0 0 20px;font-size:14px;color:#ccc;">${inquiry.contact_name} — <a href="mailto:${inquiry.email}" style="color:#fa9277;">${inquiry.email}</a></p>
+          <p style="margin:0 0 20px;font-size:14px;color:#ccc;">${escapeHtml(inquiry.contact_name)} — <a href="mailto:${escapeHtml(inquiry.email)}" style="color:#fa9277;">${escapeHtml(inquiry.email)}</a></p>
           <p style="margin:0 0 8px;font-size:12px;color:#888;text-transform:uppercase;letter-spacing:1px;">Looking for</p>
-          <p style="margin:0 0 20px;font-size:14px;color:#9dfa77;">${inquiry.creator_types.join(", ")}</p>
+          <p style="margin:0 0 20px;font-size:14px;color:#9dfa77;">${inquiry.creator_types.map(escapeHtml).join(", ")}</p>
           <p style="margin:0 0 8px;font-size:12px;color:#888;text-transform:uppercase;letter-spacing:1px;">Project</p>
-          <p style="margin:0;font-size:14px;color:#ccc;line-height:1.6;">${inquiry.project_description.replace(/\n/g, "<br>")}</p>
+          <p style="margin:0;font-size:14px;color:#ccc;line-height:1.6;">${escapeHtml(inquiry.project_description).replace(/\n/g, "<br>")}</p>
         </td></tr>
         <tr><td style="padding:24px 0;text-align:center;">
           <a href="${SITE_URL}/admin/inquiries" style="display:inline-block;background-color:#fa9277;color:#0a0a0a;font-size:14px;font-weight:bold;text-decoration:none;padding:14px 40px;border-radius:100px;letter-spacing:1px;">VIEW IN ADMIN</a>

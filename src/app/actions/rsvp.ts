@@ -4,7 +4,13 @@ import { getSupabaseAdmin } from "@/lib/supabase-server";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { isAdmin } from "@/lib/admin";
 
-export async function rsvpToEvent(userId: string, eventId: string) {
+export async function rsvpToEvent(_userId: string, eventId: string) {
+  // Verify auth server-side — ignore the passed userId
+  const authClient = await createServerSupabaseClient();
+  const { data: { user } } = await authClient.auth.getUser();
+  if (!user) return { success: false, error: "Not authenticated", waitlisted: false, status: null };
+  const userId = user.id;
+
   const supabase = getSupabaseAdmin();
 
   // Check if already RSVP'd
@@ -90,6 +96,11 @@ export async function checkRsvp(userId: string, eventId: string) {
 }
 
 export async function checkInToEvent(userId: string, eventId: string) {
+  // Admin-only action
+  const authClient = await createServerSupabaseClient();
+  const { data: { user: adminUser } } = await authClient.auth.getUser();
+  if (!adminUser || !isAdmin(adminUser.email)) return { success: false, error: "Not authorized" };
+
   const supabase = getSupabaseAdmin();
 
   // Get the RSVP

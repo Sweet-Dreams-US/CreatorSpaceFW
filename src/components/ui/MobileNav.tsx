@@ -36,6 +36,7 @@ export default function MobileNav() {
     { label: "Challenges", href: "/challenges" },
     { label: "Skills Exchange", href: "/learn" },
     { label: "Hire a Creator", href: "/hire" },
+    { label: "Spotlight", href: "/spotlight" },
     ...(userIsAdmin ? [{ label: "Admin Dashboard", href: "/admin" }] : []),
     ...(user
       ? [{ label: "My Profile", href: "/profile/edit" }]

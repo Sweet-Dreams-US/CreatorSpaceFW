@@ -13,7 +13,12 @@ const SECTIONS = [
 
 const PAGES = [
   { label: "Creator Directory", href: "/directory", key: "directory" },
-  { label: "Design System", href: "/design-system", key: "design" },
+  { label: "Collaborate", href: "/collaborate", key: "collaborate" },
+  { label: "Community Resources", href: "/resources", key: "resources" },
+  { label: "Monthly Challenges", href: "/challenges", key: "challenges" },
+  { label: "Skills Exchange", href: "/learn", key: "learn" },
+  { label: "Hire a Creator", href: "/hire", key: "hire" },
+  { label: "Creator Spotlight", href: "/spotlight", key: "spotlight" },
 ];
 
 export default function CommandPalette() {

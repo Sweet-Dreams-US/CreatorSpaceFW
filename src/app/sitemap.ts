@@ -25,19 +25,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }));
 
+  const now = new Date().toISOString();
+
   return [
-    {
-      url: baseUrl,
-      lastModified: new Date().toISOString(),
-      changeFrequency: "daily",
-      priority: 1.0,
-    },
-    {
-      url: `${baseUrl}/directory`,
-      lastModified: new Date().toISOString(),
-      changeFrequency: "daily",
-      priority: 0.9,
-    },
+    { url: baseUrl, lastModified: now, changeFrequency: "daily", priority: 1.0 },
+    { url: `${baseUrl}/directory`, lastModified: now, changeFrequency: "daily", priority: 0.9 },
+    { url: `${baseUrl}/collaborate`, lastModified: now, changeFrequency: "daily", priority: 0.8 },
+    { url: `${baseUrl}/resources`, lastModified: now, changeFrequency: "daily", priority: 0.8 },
+    { url: `${baseUrl}/challenges`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
+    { url: `${baseUrl}/learn`, lastModified: now, changeFrequency: "weekly", priority: 0.7 },
+    { url: `${baseUrl}/hire`, lastModified: now, changeFrequency: "monthly", priority: 0.9 },
+    { url: `${baseUrl}/spotlight`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
     ...creatorEntries,
   ];
 }
