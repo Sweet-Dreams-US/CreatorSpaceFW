@@ -62,9 +62,6 @@ export default function FloatingNav() {
       <a href="/challenges" className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-widest text-[var(--color-smoke)] transition-colors hover:text-[var(--color-white)]">
         Challenges
       </a>
-      <a href="/leaderboard" className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-widest text-[var(--color-smoke)] transition-colors hover:text-[var(--color-white)]">
-        Leaderboard
-      </a>
       <a href="/hire" className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-widest text-[var(--color-lime)] transition-colors hover:text-[var(--color-white)]">
         Hire
       </a>

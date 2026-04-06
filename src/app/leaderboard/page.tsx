@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import CommunityNav from "@/components/ui/CommunityNav";
 import { useAuth } from "@/components/providers/AuthProvider";
+import { isAdmin, hasModeratorAccess } from "@/lib/admin";
 import { getLeaderboard, getPointsBreakdown, getPointsGuide } from "@/app/actions/points";
 
 interface LeaderboardEntry {
@@ -51,7 +52,7 @@ function timeAgo(dateStr: string) {
 }
 
 export default function LeaderboardPage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, role } = useAuth();
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [myBreakdown, setMyBreakdown] = useState<PointsBreakdown | null>(null);
   const [guide, setGuide] = useState<PointsGuideEntry[]>([]);
@@ -91,18 +92,38 @@ export default function LeaderboardPage() {
     loadMy();
   }, [user]);
 
-  // Public sees top 10, logged in sees all
-  const isLoggedIn = !authLoading && !!user;
-  const displayList = isLoggedIn ? leaderboard : leaderboard.slice(0, 10);
+  // Admin/board only — redirect others
+  const canView = !authLoading && !!user && (isAdmin(user.email) || hasModeratorAccess(role));
+  const displayList = leaderboard;
 
-  if (loading) {
+  if (loading || authLoading) {
     return (
       <main className="min-h-screen bg-[var(--color-black)] px-6 py-16">
         <div className="mx-auto max-w-5xl">
-          <CommunityNav />
           <div className="mt-24 text-center font-[family-name:var(--font-mono)] text-sm text-[var(--color-smoke)]">
-            Loading leaderboard...
+            Loading...
           </div>
+        </div>
+      </main>
+    );
+  }
+
+  if (!canView) {
+    return (
+      <main className="min-h-screen bg-[var(--color-black)] px-6 py-16">
+        <div className="mx-auto max-w-5xl text-center">
+          <h1 className="mt-24 font-[family-name:var(--font-display)] text-3xl text-[var(--color-white)]">
+            Admin Only
+          </h1>
+          <p className="mt-3 font-[family-name:var(--font-mono)] text-sm text-[var(--color-smoke)]">
+            The leaderboard is currently only available to admins.
+          </p>
+          <Link
+            href="/directory"
+            className="mt-8 inline-block rounded-full border border-[var(--color-coral)] px-6 py-2.5 font-[family-name:var(--font-mono)] text-xs text-[var(--color-coral)] transition-all hover:bg-[var(--color-coral)] hover:text-[var(--color-black)]"
+          >
+            Back to Directory
+          </Link>
         </div>
       </main>
     );
@@ -232,16 +253,8 @@ export default function LeaderboardPage() {
         {/* Leaderboard Rankings */}
         <div className="mt-10">
           <h2 className="font-[family-name:var(--font-display)] text-xl text-[var(--color-white)]">
-            {isLoggedIn ? "Community Rankings" : "Top 10 Creators"}
+            Community Rankings
           </h2>
-          {!isLoggedIn && (
-            <p className="mt-1 font-[family-name:var(--font-mono)] text-xs text-[var(--color-smoke)]">
-              <Link href="/auth/login" className="text-[var(--color-coral)] hover:underline">
-                Sign in
-              </Link>{" "}
-              to see full rankings and your points
-            </p>
-          )}
 
           <div className="mt-6 space-y-3">
             {displayList.map((entry, i) => (

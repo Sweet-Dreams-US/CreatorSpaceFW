@@ -34,7 +34,6 @@ export default function MobileNav() {
     { label: "Collaborate", href: "/collaborate" },
     { label: "Challenges", href: "/challenges" },
     { label: "Skills Exchange", href: "/learn" },
-    { label: "Leaderboard", href: "/leaderboard" },
     { label: "Hire a Creator", href: "/hire" },
     { label: "Spotlight", href: "/spotlight" },
     ...(userIsAdmin ? [{ label: "Admin Dashboard", href: "/admin" }] : []),
