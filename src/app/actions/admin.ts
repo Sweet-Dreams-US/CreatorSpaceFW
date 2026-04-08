@@ -252,6 +252,21 @@ export async function createPlatformUpdate(data: {
 }
 
 export async function getPlatformUpdates(level?: string) {
+  // Require at least moderator access
+  const supabase = await createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const emailAdmin = isAdmin(user.email);
+  if (!emailAdmin) {
+    const { data: creator } = await getSupabaseAdmin()
+      .from("creators")
+      .select("role")
+      .eq("auth_id", user.id)
+      .single();
+    if (!creator?.role || !["admin", "board"].includes(creator.role)) return [];
+  }
+
   let query = getSupabaseAdmin()
     .from("platform_updates")
     .select("*")

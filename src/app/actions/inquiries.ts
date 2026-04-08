@@ -251,10 +251,14 @@ export async function searchCreatorsForReferral(query: string) {
   } = await supabase.auth.getUser();
   if (!user || !isAdmin(user.email)) return [];
 
+  // Sanitize: only allow alphanumeric, spaces, hyphens
+  const sanitized = query.replace(/[^a-zA-Z0-9\s\-]/g, "").trim().substring(0, 50);
+  if (!sanitized) return [];
+
   const { data } = await getSupabaseAdmin()
     .from("creators")
     .select("id, first_name, last_name, skills, avatar_url, slug")
-    .or(`first_name.ilike.%${query}%,last_name.ilike.%${query}%,skills.ilike.%${query}%`)
+    .or(`first_name.ilike.%${sanitized}%,last_name.ilike.%${sanitized}%,skills.ilike.%${sanitized}%`)
     .limit(10);
 
   return data || [];

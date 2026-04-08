@@ -1,6 +1,9 @@
 export async function verifyTurnstileToken(token: string): Promise<boolean> {
   const secret = process.env.TURNSTILE_SECRET_KEY;
-  if (!secret) return true; // Skip verification if not configured
+  if (!secret) {
+    console.warn("TURNSTILE_SECRET_KEY not configured — blocking request");
+    return false;
+  }
 
   const res = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
     method: "POST",

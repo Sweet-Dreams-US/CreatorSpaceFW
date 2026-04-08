@@ -27,6 +27,14 @@ export async function sendConnectionRequest(toCreatorId: string, message?: strin
     return { error: "You cannot connect with yourself." };
   }
 
+  // Verify target creator exists
+  const { data: targetCreator } = await getSupabaseAdmin()
+    .from("creators")
+    .select("id")
+    .eq("id", toCreatorId)
+    .single();
+  if (!targetCreator) return { error: "Creator not found." };
+
   // Check if a connection already exists in either direction
   const { data: existing } = await getSupabaseAdmin()
     .from("connections")
@@ -56,6 +64,11 @@ export async function sendConnectionRequest(toCreatorId: string, message?: strin
 }
 
 export async function getConnectionStatus(fromCreatorId: string, toCreatorId: string) {
+  // Require auth — only allow checking your own connection status
+  const authClient = await createServerSupabaseClient();
+  const { data: { user } } = await authClient.auth.getUser();
+  if (!user) return null;
+
   const { data } = await getSupabaseAdmin()
     .from("connections")
     .select("id, status, from_creator_id, to_creator_id")

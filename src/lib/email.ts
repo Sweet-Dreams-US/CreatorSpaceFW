@@ -290,7 +290,7 @@ function buildAnnouncementHtml(firstName: string, subject: string, body: string)
                 Hey ${firstName},
               </p>
               <div style="font-size:14px;color:#cccccc;line-height:1.8;">
-                ${body.replace(/\n/g, "<br>")}
+                ${escapeHtml(body).replace(/\n/g, "<br>")}
               </div>
             </td>
           </tr>

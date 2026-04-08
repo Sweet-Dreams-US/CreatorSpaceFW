@@ -80,11 +80,16 @@ export async function rsvpToEvent(_userId: string, eventId: string) {
   return { success: true, alreadyRsvpd: false, waitlisted: status === "waitlisted", status };
 }
 
-export async function checkRsvp(userId: string, eventId: string) {
+export async function checkRsvp(_userId: string, eventId: string) {
+  // Verify auth server-side — ignore client-passed userId
+  const authClient = await createServerSupabaseClient();
+  const { data: { user } } = await authClient.auth.getUser();
+  if (!user) return { hasRsvpd: false, status: null, waitlisted: false };
+
   const { data } = await getSupabaseAdmin()
     .from("rsvps")
     .select("id, status")
-    .eq("user_id", userId)
+    .eq("user_id", user.id)
     .eq("event_id", eventId)
     .limit(1);
 
@@ -184,6 +189,11 @@ export async function markNoShow(eventId: string) {
 }
 
 export async function promoteFromWaitlist(eventId: string) {
+  // Admin-only action
+  const authClient = await createServerSupabaseClient();
+  const { data: { user } } = await authClient.auth.getUser();
+  if (!user || !isAdmin(user.email)) return { promoted: 0 };
+
   const supabase = getSupabaseAdmin();
 
   // Get event capacity
