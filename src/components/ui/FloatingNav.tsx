@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { isAdmin } from "@/lib/admin";
@@ -60,28 +61,28 @@ export default function FloatingNav() {
     <>
     {/* Top-left auth links */}
     <div className="fixed left-5 top-4 z-[100] hidden items-center gap-4 md:flex">
-      <a href="/directory" className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-widest text-[var(--color-smoke)] transition-colors hover:text-[var(--color-white)]">
+      <Link href="/directory" className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-widest text-[var(--color-smoke)] transition-colors hover:text-[var(--color-white)]">
         Directory
-      </a>
-      <a href="/collaborate" className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-widest text-[var(--color-smoke)] transition-colors hover:text-[var(--color-white)]">
+      </Link>
+      <Link href="/collaborate" className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-widest text-[var(--color-smoke)] transition-colors hover:text-[var(--color-white)]">
         Collaborate
-      </a>
-      <a href="/challenges" className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-widest text-[var(--color-smoke)] transition-colors hover:text-[var(--color-white)]">
+      </Link>
+      <Link href="/challenges" className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-widest text-[var(--color-smoke)] transition-colors hover:text-[var(--color-white)]">
         Challenges
-      </a>
-      <a href="/hire" className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-widest text-[var(--color-lime)] transition-colors hover:text-[var(--color-white)]">
+      </Link>
+      <Link href="/hire" className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-widest text-[var(--color-lime)] transition-colors hover:text-[var(--color-white)]">
         Hire
-      </a>
+      </Link>
       {userIsAdmin && (
-        <a href="/admin" className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-widest text-[var(--color-coral)] transition-colors hover:text-[var(--color-white)]">
+        <Link href="/admin" className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-widest text-[var(--color-coral)] transition-colors hover:text-[var(--color-white)]">
           Admin
-        </a>
+        </Link>
       )}
       {user ? (
         <>
-          <a href="/profile/edit" className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-widest text-[var(--color-smoke)] transition-colors hover:text-[var(--color-white)]">
+          <Link href="/profile/edit" className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-widest text-[var(--color-smoke)] transition-colors hover:text-[var(--color-white)]">
             Profile
-          </a>
+          </Link>
           <button
             onClick={handleLogout}
             className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-widest text-[var(--color-smoke)] transition-colors hover:text-[var(--color-coral)]"
@@ -90,9 +91,9 @@ export default function FloatingNav() {
           </button>
         </>
       ) : (
-        <a href="/auth/login" className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-widest text-[var(--color-smoke)] transition-colors hover:text-[var(--color-white)]">
+        <Link href="/auth/login" className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-widest text-[var(--color-smoke)] transition-colors hover:text-[var(--color-white)]">
           Sign In
-        </a>
+        </Link>
       )}
     </div>
     <nav
