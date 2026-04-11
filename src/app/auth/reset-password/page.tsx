@@ -20,18 +20,38 @@ export default function ResetPasswordPage() {
     const supabase = createClient();
 
     async function init() {
-      // If URL has a code param, exchange it for a session first
       const url = new URL(window.location.href);
+
+      // Check for error in URL params (e.g., expired link)
+      const urlError = url.searchParams.get("error_description") || url.hash.match(/error_description=([^&]*)/)?.[1];
+      if (urlError) {
+        setError(decodeURIComponent(urlError.replace(/\+/g, " ")));
+        setReady(false);
+        return;
+      }
+
+      // If URL has a code param, exchange it for a session first
       const code = url.searchParams.get("code");
       if (code) {
         const { error } = await supabase.auth.exchangeCodeForSession(code);
         if (!error) {
           setReady(true);
           return;
+        } else {
+          setError(error.message);
+          return;
         }
       }
 
-      // Check if we already have a session (user clicked recovery link)
+      // Check hash fragment for access_token (implicit flow)
+      const hashParams = new URLSearchParams(url.hash.substring(1));
+      const accessToken = hashParams.get("access_token");
+      if (accessToken) {
+        setReady(true);
+        return;
+      }
+
+      // Check if we already have a session
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         setReady(true);
@@ -122,12 +142,29 @@ export default function ResetPasswordPage() {
           NEW PASSWORD
         </h1>
         <p className="mt-2 font-[family-name:var(--font-mono)] text-sm text-[var(--color-mist)]">
-          {ready
+          {error && !ready
+            ? ""
+            : ready
             ? "Choose your new password."
             : "Verifying your reset link..."}
         </p>
 
-        {!ready && (
+        {/* Error state — expired or invalid link */}
+        {error && !ready && (
+          <div className="mt-8 text-center">
+            <p className="font-[family-name:var(--font-mono)] text-sm text-red-400">
+              {error}
+            </p>
+            <Link
+              href="/auth/forgot-password"
+              className="mt-4 inline-block rounded-full bg-[var(--color-coral)] px-6 py-2.5 font-[family-name:var(--font-mono)] text-xs font-semibold text-[var(--color-black)]"
+            >
+              Request a New Reset Link
+            </Link>
+          </div>
+        )}
+
+        {!ready && !error && (
           <div className="mt-8 flex justify-center">
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--color-smoke)] border-t-[var(--color-coral)]" />
           </div>
