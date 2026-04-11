@@ -319,6 +319,12 @@ export default function ProfileEditPage() {
               className={inputClass}
             />
           </div>
+          <input
+            name="location"
+            defaultValue={profile.location || ""}
+            placeholder="Location (e.g. Fort Wayne, IN)"
+            className={inputClass}
+          />
           <SocialFields
             defaultValue={profile.social}
             inputClass={inputClass}
@@ -634,7 +640,14 @@ export default function ProfileEditPage() {
                       setDeleting(false);
                       setShowDeleteConfirm(false);
                     } else {
-                      router.push("/");
+                      // Clear cookies and hard redirect
+                      document.cookie.split(";").forEach((c) => {
+                        const name = c.trim().split("=")[0];
+                        if (name.startsWith("sb-")) {
+                          document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
+                        }
+                      });
+                      window.location.href = "/";
                     }
                   }}
                   disabled={deleting}
