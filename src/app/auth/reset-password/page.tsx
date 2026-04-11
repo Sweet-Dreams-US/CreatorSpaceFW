@@ -33,21 +33,19 @@ export default function ResetPasswordPage() {
         return;
       }
 
-      // Session should already be established by /auth/callback
-      // Just check if we have a valid session
+      // Implicit flow: hash fragment contains access_token
+      // Supabase client auto-detects and sets session from hash
+      // Just wait for onAuthStateChange to fire
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         setReady(true);
         return;
       }
-
-      // No session — user may have navigated here directly
-      setError("No active session. Please request a new password reset link.");
     }
 
     init();
 
-    // Listen for auth state changes (backup)
+    // Listen for PASSWORD_RECOVERY event (fires when session from hash is set)
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event) => {
@@ -57,7 +55,17 @@ export default function ResetPasswordPage() {
       }
     });
 
-    return () => subscription.unsubscribe();
+    // Fallback — if nothing fires in 5s and no error, show message
+    const timeout = setTimeout(() => {
+      if (!ready && !error) {
+        setError("Session could not be established. Please request a new reset link.");
+      }
+    }, 5000);
+
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(timeout);
+    };
   }, []);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
