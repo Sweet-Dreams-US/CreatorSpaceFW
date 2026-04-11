@@ -31,6 +31,21 @@ export async function GET(request: NextRequest) {
     if (!error) {
       return response;
     }
+
+    // Code exchange failed — redirect to next page with error info
+    // so the page can show a helpful message
+    console.error("Auth callback code exchange failed:", error.message);
+    const errorUrl = new URL(`${origin}${next}`);
+    errorUrl.searchParams.set("error_description", error.message);
+    return NextResponse.redirect(errorUrl.toString());
+  }
+
+  // No code param — check for error params and forward them
+  const errorDesc = searchParams.get("error_description");
+  if (errorDesc && next !== "/profile/edit") {
+    const errorUrl = new URL(`${origin}${next}`);
+    errorUrl.searchParams.set("error_description", errorDesc);
+    return NextResponse.redirect(errorUrl.toString());
   }
 
   return NextResponse.redirect(`${origin}/auth/login`);
