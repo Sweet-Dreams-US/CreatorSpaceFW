@@ -1,62 +1,27 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase";
+import { changePassword } from "@/app/actions/auth";
 import PasswordInput from "@/components/ui/PasswordInput";
-import TurnstileWidget from "@/components/ui/TurnstileWidget";
 
 export default function ResetPasswordPage() {
-  const [error, setError] = useState("");
+  const [error, setError] = useState(() => {
+    if (typeof window === "undefined") return "";
+    const url = new URL(window.location.href);
+    const urlError =
+      url.searchParams.get("error_description") ||
+      url.hash.match(/error_description=([^&]*)/)?.[1];
+    return urlError ? decodeURIComponent(urlError.replace(/\+/g, " ")) : "";
+  });
   const [loading, setLoading] = useState(false);
-  const [ready, setReady] = useState(false);
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
-  const [turnstileToken, setTurnstileToken] = useState("");
   const [success, setSuccess] = useState(false);
   const router = useRouter();
 
-  useEffect(() => {
-    const supabase = createClient();
-
-    async function init() {
-      const url = new URL(window.location.href);
-
-      // Check for error in URL params or hash (e.g., expired link)
-      const urlError =
-        url.searchParams.get("error_description") ||
-        url.hash.match(/error_description=([^&]*)/)?.[1];
-      if (urlError) {
-        setError(decodeURIComponent(urlError.replace(/\+/g, " ")));
-        return;
-      }
-
-      // Session should be set by /auth/confirm route via cookies
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        setReady(true);
-        return;
-      }
-
-      // No session found — show error with retry link
-      setError("No active session. Please request a new password reset link.");
-    }
-
-    init();
-
-    // Also listen for PASSWORD_RECOVERY event as backup
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "PASSWORD_RECOVERY" || event === "SIGNED_IN") {
-        setReady(true);
-        setError("");
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
+  const hasError = error && !success;
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -75,31 +40,18 @@ export default function ResetPasswordPage() {
       return;
     }
 
-    try {
-      const supabase = createClient();
+    // Use server action — it reads session from cookies server-side
+    const result = await changePassword(password);
 
-      // Timeout after 10s to prevent infinite hang
-      const result = await Promise.race([
-        supabase.auth.updateUser({ password }),
-        new Promise<{ error: { message: string } }>((_, reject) =>
-          setTimeout(() => reject(new Error("Request timed out. Please try again.")), 10000)
-        ),
-      ]);
-
-      if (result && "error" in result && result.error) {
-        setError(result.error.message);
-        setLoading(false);
-        return;
-      }
-
-      // Success
-      setSuccess(true);
+    if (result.error) {
+      setError(result.error);
       setLoading(false);
-      setTimeout(() => router.push("/profile/edit"), 2000);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to update password. Please try again.");
-      setLoading(false);
+      return;
     }
+
+    setSuccess(true);
+    setLoading(false);
+    setTimeout(() => router.push("/profile/edit"), 2000);
   }
 
   const match =
@@ -123,15 +75,11 @@ export default function ResetPasswordPage() {
           NEW PASSWORD
         </h1>
         <p className="mt-2 font-[family-name:var(--font-mono)] text-sm text-[var(--color-mist)]">
-          {error && !ready
-            ? ""
-            : ready
-            ? "Choose your new password."
-            : "Verifying your reset link..."}
+          {hasError ? "" : success ? "" : "Choose your new password."}
         </p>
 
         {/* Error state — expired or invalid link */}
-        {error && !ready && (
+        {hasError && (
           <div className="mt-8 text-center">
             <p className="font-[family-name:var(--font-mono)] text-sm text-red-400">
               {error}
@@ -145,12 +93,7 @@ export default function ResetPasswordPage() {
           </div>
         )}
 
-        {!ready && !error && (
-          <div className="mt-8 flex justify-center">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--color-smoke)] border-t-[var(--color-coral)]" />
-          </div>
-        )}
-
+        {/* Success state */}
         {success && (
           <div className="mt-10 text-center">
             <p className="font-[family-name:var(--font-display)] text-2xl text-[var(--color-lime)]">
@@ -162,55 +105,49 @@ export default function ResetPasswordPage() {
           </div>
         )}
 
-        <form
-          onSubmit={handleSubmit}
-          className="mt-8 space-y-6"
-          style={{ opacity: ready && !success ? 1 : 0.4, pointerEvents: ready && !success ? "auto" : "none", display: success ? "none" : undefined }}
-        >
-          <PasswordInput
-            name="password"
-            placeholder="New Password * (min 6 chars)"
-            showStrength
-            value={password}
-            onChange={setPassword}
-          />
-
-          <div className="relative">
+        {/* Form — always visible unless there's a URL error or success */}
+        {!hasError && !success && (
+          <form onSubmit={handleSubmit} className="mt-8 space-y-6">
             <PasswordInput
-              name="confirm"
-              placeholder="Confirm Password *"
-              value={confirm}
-              onChange={setConfirm}
+              name="password"
+              placeholder="New Password * (min 6 chars)"
+              showStrength
+              value={password}
+              onChange={setPassword}
             />
-            {match !== null && (
-              <span
-                className="absolute -bottom-5 left-0 font-[family-name:var(--font-mono)] text-[10px]"
-                style={{ color: match ? "#9dfa77" : "#ef4444" }}
-              >
-                {match ? "Passwords match" : "Passwords don't match"}
-              </span>
+
+            <div className="relative">
+              <PasswordInput
+                name="confirm"
+                placeholder="Confirm Password *"
+                value={confirm}
+                onChange={setConfirm}
+              />
+              {match !== null && (
+                <span
+                  className="absolute -bottom-5 left-0 font-[family-name:var(--font-mono)] text-[10px]"
+                  style={{ color: match ? "#9dfa77" : "#ef4444" }}
+                >
+                  {match ? "Passwords match" : "Passwords don't match"}
+                </span>
+              )}
+            </div>
+
+            {error && (
+              <p className="font-[family-name:var(--font-mono)] text-sm text-red-400">
+                {error}
+              </p>
             )}
-          </div>
 
-          {error && (
-            <p className="font-[family-name:var(--font-mono)] text-sm text-red-400">
-              {error}
-            </p>
-          )}
-
-          <TurnstileWidget
-            onSuccess={setTurnstileToken}
-            onExpire={() => setTurnstileToken("")}
-          />
-
-          <button
-            type="submit"
-            disabled={loading || !ready || !turnstileToken}
-            className="w-full rounded-full bg-[var(--color-coral)] px-8 py-3.5 font-[family-name:var(--font-mono)] text-sm font-semibold text-[var(--color-black)] transition-all duration-300 hover:scale-105 hover:shadow-[0_0_24px_#fa927740] disabled:opacity-50 disabled:hover:scale-100"
-          >
-            {loading ? "UPDATING..." : "SET NEW PASSWORD"}
-          </button>
-        </form>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full rounded-full bg-[var(--color-coral)] px-8 py-3.5 font-[family-name:var(--font-mono)] text-sm font-semibold text-[var(--color-black)] transition-all duration-300 hover:scale-105 hover:shadow-[0_0_24px_#fa927740] disabled:opacity-50 disabled:hover:scale-100"
+            >
+              {loading ? "UPDATING..." : "SET NEW PASSWORD"}
+            </button>
+          </form>
+        )}
       </div>
     </main>
   );
