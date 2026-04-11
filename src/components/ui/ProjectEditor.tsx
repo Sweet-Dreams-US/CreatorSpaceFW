@@ -152,9 +152,15 @@ function ProjectCard({
       const path = `${userId}/projects/${project.id}/${Date.now()}.${ext}`;
       const supabase = createClient();
 
-      const { error: storageError } = await supabase.storage
+      const uploadPromise = supabase.storage
         .from("avatars")
-        .upload(path, file, { upsert: false });
+        .upload(path, file, { upsert: true });
+
+      const timeoutPromise = new Promise<{ error: { message: string } }>((_, reject) =>
+        setTimeout(() => reject(new Error("Upload timed out. Try a smaller image.")), 15000)
+      );
+
+      const { error: storageError } = await Promise.race([uploadPromise, timeoutPromise]);
 
       if (storageError) {
         setUploadError(storageError.message);
