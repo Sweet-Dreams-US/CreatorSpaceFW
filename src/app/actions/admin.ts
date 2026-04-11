@@ -252,7 +252,20 @@ export async function createPlatformUpdate(data: {
 }
 
 export async function getPlatformUpdates(level?: string) {
-  // Require at least moderator access
+  // User-level updates are public to any authenticated user
+  // Admin-level updates require moderator access
+  if (level === "user") {
+    // Anyone can see user-level updates (even unauthenticated for the public page)
+    const { data } = await getSupabaseAdmin()
+      .from("platform_updates")
+      .select("*")
+      .eq("level", "user")
+      .order("created_at", { ascending: false })
+      .limit(50);
+    return data || [];
+  }
+
+  // For admin-level or unfiltered: require moderator access
   const supabase = await createServerSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return [];

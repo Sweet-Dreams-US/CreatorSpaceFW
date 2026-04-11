@@ -11,6 +11,7 @@ const NAV_LINKS = [
   { label: "Challenges", href: "/challenges" },
   { label: "Learn", href: "/learn" },
   { label: "Spotlight", href: "/spotlight" },
+  { label: "Updates", href: "/updates" },
   { label: "Hire", href: "/hire", highlight: true },
 ];
 
