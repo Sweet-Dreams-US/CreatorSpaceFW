@@ -190,6 +190,18 @@ export async function referInquiryToCreator(
     .update({ status: "referred", updated_at: new Date().toISOString() })
     .eq("id", inquiryId);
 
+  // In-app notification
+  try {
+    const { createNotification } = await import("./notifications");
+    await createNotification({
+      creatorId,
+      type: "inquiry_referral",
+      title: `New job lead from ${inquiry.business_name}`,
+      body: inquiry.project_description?.substring(0, 100),
+      link: "/profile/edit",
+    });
+  } catch { /* silent */ }
+
   // Send email to creator if they have an account
   if (creator.auth_id) {
     try {

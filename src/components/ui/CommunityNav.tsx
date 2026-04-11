@@ -70,6 +70,16 @@ export default function CommunityNav() {
         {loading ? null : user ? (
           <>
             <Link
+              href="/notifications"
+              className={`font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-widest transition-colors ${
+                pathname === "/notifications"
+                  ? "text-[var(--color-coral)]"
+                  : "text-[var(--color-smoke)] hover:text-[var(--color-white)]"
+              }`}
+            >
+              Notifications
+            </Link>
+            <Link
               href="/connections"
               className={`font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-widest transition-colors ${
                 pathname === "/connections"

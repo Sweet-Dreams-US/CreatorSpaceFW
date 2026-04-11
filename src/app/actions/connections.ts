@@ -1,6 +1,7 @@
 "use server";
 
 import { createServerSupabaseClient, getSupabaseAdmin } from "@/lib/supabase-server";
+import { createNotification } from "./notifications";
 
 export async function sendConnectionRequest(toCreatorId: string, message?: string) {
   const supabase = await createServerSupabaseClient();
@@ -58,6 +59,22 @@ export async function sendConnectionRequest(toCreatorId: string, message?: strin
 
   if (error) {
     return { error: "Failed to send connection request." };
+  }
+
+  // In-app notification to the receiver
+  const { data: senderInfo } = await getSupabaseAdmin()
+    .from("creators")
+    .select("first_name, last_name, slug")
+    .eq("id", creator.id)
+    .single();
+  if (senderInfo) {
+    await createNotification({
+      creatorId: toCreatorId,
+      type: "connection_request",
+      title: `${senderInfo.first_name} ${senderInfo.last_name} wants to connect`,
+      body: message?.trim() || undefined,
+      link: `/directory/${senderInfo.slug}`,
+    });
   }
 
   // Email notification to the receiver
@@ -213,6 +230,30 @@ export async function respondToConnection(connectionId: string, status: "accepte
   if (error) {
     return { error: "Failed to update connection." };
   }
+
+  // Notify the sender about the decision
+  try {
+    const { data: conn } = await getSupabaseAdmin()
+      .from("connections")
+      .select("from_creator_id")
+      .eq("id", connectionId)
+      .single();
+    const { data: responder } = await getSupabaseAdmin()
+      .from("creators")
+      .select("first_name, last_name, slug")
+      .eq("id", creator.id)
+      .single();
+    if (conn && responder) {
+      await createNotification({
+        creatorId: conn.from_creator_id,
+        type: status === "accepted" ? "connection_accepted" : "general",
+        title: status === "accepted"
+          ? `${responder.first_name} ${responder.last_name} accepted your connection`
+          : `${responder.first_name} ${responder.last_name} declined your connection`,
+        link: `/directory/${responder.slug}`,
+      });
+    }
+  } catch { /* silent */ }
 
   // Award points to both creators on accepted connection
   if (status === "accepted") {

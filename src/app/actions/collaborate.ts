@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createServerSupabaseClient, getSupabaseAdmin } from "@/lib/supabase-server";
 import { isAdmin } from "@/lib/admin";
+import { createNotification } from "./notifications";
 import { awardPoints } from "./points";
 
 interface CollabPostData {
@@ -70,6 +71,27 @@ export async function getCollabPosts(filters?: {
   return data || [];
 }
 
+export async function getMyCollabPosts() {
+  const supabase = await createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data: creator } = await getSupabaseAdmin()
+    .from("creators")
+    .select("id")
+    .eq("auth_id", user.id)
+    .single();
+  if (!creator) return [];
+
+  const { data } = await getSupabaseAdmin()
+    .from("collab_posts")
+    .select("*, creators:creator_id(id, first_name, last_name, avatar_url, slug)")
+    .eq("creator_id", creator.id)
+    .order("created_at", { ascending: false });
+
+  return data || [];
+}
+
 export async function getCollabPost(postId: string) {
   const { data: post } = await getSupabaseAdmin()
     .from("collab_posts")
@@ -120,6 +142,28 @@ export async function respondToCollabPost(postId: string, message: string) {
   }
 
   await awardPoints(creator.id, "collab_response");
+
+  // In-app notification to post author
+  try {
+    const { data: postInfo } = await getSupabaseAdmin()
+      .from("collab_posts")
+      .select("title, creator_id")
+      .eq("id", postId)
+      .single();
+    const { data: responderInfo } = await getSupabaseAdmin()
+      .from("creators")
+      .select("first_name, last_name")
+      .eq("id", creator.id)
+      .single();
+    if (postInfo && responderInfo) {
+      await createNotification({
+        creatorId: postInfo.creator_id,
+        type: "collab_response",
+        title: `${responderInfo.first_name} ${responderInfo.last_name} is interested in "${postInfo.title}"`,
+        link: `/collaborate/${postId}`,
+      });
+    }
+  } catch { /* silent */ }
 
   // Email notification to post author
   try {
@@ -254,6 +298,30 @@ export async function respondToCollabResponse(
     .eq("id", responseId);
 
   if (error) return { error: error.message };
+
+  // In-app notification to responder
+  try {
+    const { data: responseInfo } = await getSupabaseAdmin()
+      .from("collab_responses")
+      .select("creator_id")
+      .eq("id", responseId)
+      .single();
+    const { data: postInfo } = await getSupabaseAdmin()
+      .from("collab_posts")
+      .select("title")
+      .eq("id", response.post_id)
+      .single();
+    if (responseInfo && postInfo) {
+      await createNotification({
+        creatorId: responseInfo.creator_id,
+        type: status === "accepted" ? "collab_accepted" : "collab_declined",
+        title: status === "accepted"
+          ? `You've been accepted for "${postInfo.title}"!`
+          : `Update on your request for "${postInfo.title}"`,
+        link: `/collaborate/${response.post_id}`,
+      });
+    }
+  } catch { /* silent */ }
 
   // Email notification to responder about the decision
   try {

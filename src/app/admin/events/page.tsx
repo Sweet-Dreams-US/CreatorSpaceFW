@@ -7,6 +7,7 @@ import {
   deleteEvent,
   getAllEvents,
   getRsvpCountsBatch,
+  getEventAttendees,
 } from "@/app/actions/events";
 
 interface Event {
@@ -24,6 +25,9 @@ interface Event {
 export default function AdminEventsPage() {
   const [events, setEvents] = useState<Event[]>([]);
   const [rsvpCounts, setRsvpCounts] = useState<Record<string, number>>({});
+  const [expandedRsvp, setExpandedRsvp] = useState<string | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [attendees, setAttendees] = useState<Record<string, any[]>>({});
   const [showForm, setShowForm] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
@@ -141,11 +145,61 @@ export default function AdminEventsPage() {
                     </p>
                   )}
                   <div className="mt-3 flex items-center gap-4">
-                    <span className="font-[family-name:var(--font-mono)] text-xs text-[var(--color-coral)]">
+                    <button
+                      onClick={async () => {
+                        if (expandedRsvp === event.id) {
+                          setExpandedRsvp(null);
+                          return;
+                        }
+                        if (!attendees[event.id]) {
+                          const data = await getEventAttendees(event.id);
+                          setAttendees((prev) => ({ ...prev, [event.id]: data }));
+                        }
+                        setExpandedRsvp(event.id);
+                      }}
+                      className="font-[family-name:var(--font-mono)] text-xs text-[var(--color-coral)] underline decoration-dotted underline-offset-4 hover:text-[var(--color-white)]"
+                    >
                       {rsvpCounts[event.id] || 0} RSVPs
                       {event.max_capacity ? ` / ${event.max_capacity} max` : ""}
-                    </span>
+                      {expandedRsvp === event.id ? " ▲" : " ▼"}
+                    </button>
                   </div>
+                  {/* RSVP List */}
+                  {expandedRsvp === event.id && attendees[event.id] && (
+                    <div className="mt-3 rounded-lg border border-[var(--color-ash)] bg-[var(--color-black)] p-3">
+                      <p className="mb-2 font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-wider text-[var(--color-smoke)]">
+                        RSVPd Creators
+                      </p>
+                      {attendees[event.id].length === 0 ? (
+                        <p className="font-[family-name:var(--font-mono)] text-xs text-[var(--color-smoke)]">No RSVPs yet</p>
+                      ) : (
+                        <div className="space-y-1.5">
+                          {attendees[event.id].map((a, i) => (
+                            <div key={i} className="flex items-center justify-between">
+                              <span className="font-[family-name:var(--font-mono)] text-xs text-[var(--color-mist)]">
+                                {a.first_name} {a.last_name}
+                              </span>
+                              <div className="flex items-center gap-2">
+                                {a.email && (
+                                  <span className="font-[family-name:var(--font-mono)] text-[10px] text-[var(--color-smoke)]">
+                                    {a.email}
+                                  </span>
+                                )}
+                                <span className={`rounded-full px-2 py-0.5 font-[family-name:var(--font-mono)] text-[9px] uppercase ${
+                                  a.rsvp_status === "checked_in" ? "bg-[var(--color-lime)]/15 text-[var(--color-lime)]"
+                                  : a.rsvp_status === "confirmed" ? "bg-[var(--color-sky)]/15 text-[var(--color-sky)]"
+                                  : a.rsvp_status === "waitlisted" ? "bg-[var(--color-violet)]/15 text-[var(--color-violet)]"
+                                  : "bg-[var(--color-smoke)]/15 text-[var(--color-smoke)]"
+                                }`}>
+                                  {a.rsvp_status || "rsvpd"}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <div className="flex gap-2">
                   <button
