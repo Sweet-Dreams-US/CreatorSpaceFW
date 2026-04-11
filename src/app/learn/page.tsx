@@ -51,6 +51,7 @@ export default function LearnPage() {
   const [loading, setLoading] = useState(true);
   const [connectingId, setConnectingId] = useState<string | null>(null);
   const [connectedIds, setConnectedIds] = useState<Set<string>>(new Set());
+  const [myCreatorId, setMyCreatorId] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     const [allExchanges, userMatches] = await Promise.all([
@@ -60,11 +61,12 @@ export default function LearnPage() {
     setExchanges(allExchanges as Exchange[]);
     setMatches(userMatches as Match[]);
 
-    // Get connected creator IDs
+    // Get connected creator IDs and own creator ID
     if (user) {
-      const { connections } = await getMyConnections();
+      const result = await getMyConnections();
       const ids = new Set<string>();
-      for (const c of connections || []) {
+      if (result.myCreatorId) setMyCreatorId(result.myCreatorId);
+      for (const c of result.connections || []) {
         const conn = c as { from_creator_id: string; to_creator_id: string; status: string };
         if (conn.status === "accepted") {
           ids.add(conn.from_creator_id);
@@ -81,12 +83,12 @@ export default function LearnPage() {
     loadData();
   }, [loadData]);
 
-  const filtered = filter === "All"
+  const filtered = (filter === "All"
     ? exchanges
     : exchanges.filter(
         (e) =>
           e.can_teach?.includes(filter) || e.wants_to_learn?.includes(filter)
-      );
+      )).filter((e) => e.id !== myCreatorId); // Exclude self from Browse All
 
   async function handleConnect(creatorId: string) {
     setConnectingId(creatorId);
@@ -399,7 +401,7 @@ export default function LearnPage() {
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                           <polyline points="20 6 9 17 4 12" />
                         </svg>
-                        Request Sent
+                        Connected
                       </span>
                     ) : (
                       <button
