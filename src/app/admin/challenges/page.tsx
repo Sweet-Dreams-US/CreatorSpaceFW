@@ -349,7 +349,9 @@ export default function AdminChallengesPage() {
                       </span>
                     )}
                     <span className="font-[family-name:var(--font-mono)] text-xs text-[var(--color-violet)]">
-                      {submissionCounts[challenge.id] || 0} submission{(submissionCounts[challenge.id] || 0) !== 1 ? "s" : ""}
+                      <a href={`/challenges/${challenge.id}`} className="underline decoration-dotted underline-offset-4 hover:text-[var(--color-coral)]">
+                        {submissionCounts[challenge.id] || 0} submission{(submissionCounts[challenge.id] || 0) !== 1 ? "s" : ""}
+                      </a>
                     </span>
                   </div>
                 </div>

@@ -6,7 +6,7 @@ import Image from "next/image";
 import CommunityNav from "@/components/ui/CommunityNav";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { getAvailableExchanges, getSkillExchangeMatches } from "@/app/actions/learn";
-import { sendConnectionRequest } from "@/app/actions/connections";
+import { sendConnectionRequest, getMyConnections } from "@/app/actions/connections";
 
 const SKILL_CATEGORIES = [
   "All",
@@ -59,6 +59,21 @@ export default function LearnPage() {
     ]);
     setExchanges(allExchanges as Exchange[]);
     setMatches(userMatches as Match[]);
+
+    // Get connected creator IDs
+    if (user) {
+      const { connections } = await getMyConnections();
+      const ids = new Set<string>();
+      for (const c of connections || []) {
+        const conn = c as { from_creator_id: string; to_creator_id: string; status: string };
+        if (conn.status === "accepted") {
+          ids.add(conn.from_creator_id);
+          ids.add(conn.to_creator_id);
+        }
+      }
+      setConnectedIds(ids);
+    }
+
     setLoading(false);
   }, [user]);
 
@@ -107,8 +122,56 @@ export default function LearnPage() {
           Teach what you know, learn what you don&apos;t. Connect with creators who complement your skillset.
         </p>
 
-        {/* Your Matches (logged in only) */}
-        {user && matches.length > 0 && (
+        {/* Your Connected Matches */}
+        {user && matches.filter((m) => connectedIds.has(m.id)).length > 0 && (
+          <section className="mt-12">
+            <h2 className="font-[family-name:var(--font-display)] text-xl text-[var(--color-white)]">
+              Your Connections
+            </h2>
+            <p className="mt-1 font-[family-name:var(--font-mono)] text-xs text-[var(--color-smoke)]">
+              Friends who can teach you or want to learn from you
+            </p>
+            <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {matches.filter((m) => connectedIds.has(m.id)).map((match) => (
+                <div
+                  key={match.id}
+                  className="rounded-xl border border-[var(--color-lime)]/20 bg-[var(--color-dark)] p-5 transition-all duration-300 hover:border-[var(--color-lime)]"
+                >
+                  <div className="flex items-center gap-3">
+                    <Link href={match.slug ? `/directory/${match.slug}` : "#"}>
+                      {match.avatar_url ? (
+                        <Image src={match.avatar_url} alt={`${match.first_name} ${match.last_name}`} width={36} height={36} className="h-9 w-9 rounded-full object-cover" />
+                      ) : (
+                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-charcoal)] font-[family-name:var(--font-display)] text-xs text-[var(--color-smoke)]">
+                          {match.first_name?.[0]}{match.last_name?.[0]}
+                        </div>
+                      )}
+                    </Link>
+                    <div>
+                      <Link href={match.slug ? `/directory/${match.slug}` : "#"} className="font-[family-name:var(--font-mono)] text-sm text-[var(--color-mist)] transition-colors hover:text-[var(--color-coral)]">
+                        {match.first_name} {match.last_name}
+                      </Link>
+                      <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-[var(--color-lime)]/10 px-2 py-0.5 font-[family-name:var(--font-mono)] text-[8px] text-[var(--color-lime)]">Connected</span>
+                    </div>
+                  </div>
+                  {match.teachMatch.length > 0 && (
+                    <div className="mt-3"><span className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-wider text-[var(--color-smoke)]">Can teach you</span>
+                      <div className="mt-1 flex flex-wrap gap-1">{match.teachMatch.map((s) => (<span key={s} className="rounded-full bg-[var(--color-lime)]/10 px-2.5 py-0.5 font-[family-name:var(--font-mono)] text-[10px] text-[var(--color-lime)]">{s}</span>))}</div>
+                    </div>
+                  )}
+                  {match.learnMatch.length > 0 && (
+                    <div className="mt-3"><span className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-wider text-[var(--color-smoke)]">Wants to learn from you</span>
+                      <div className="mt-1 flex flex-wrap gap-1">{match.learnMatch.map((s) => (<span key={s} className="rounded-full bg-[var(--color-sky)]/10 px-2.5 py-0.5 font-[family-name:var(--font-mono)] text-[10px] text-[var(--color-sky)]">{s}</span>))}</div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Your Matches (non-connected) */}
+        {user && matches.filter((m) => !connectedIds.has(m.id)).length > 0 && (
           <section className="mt-12">
             <h2 className="font-[family-name:var(--font-display)] text-xl text-[var(--color-white)]">
               Your Matches
@@ -117,7 +180,7 @@ export default function LearnPage() {
               Creators who can teach you or want to learn from you
             </p>
             <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {matches.map((match) => (
+              {matches.filter((m) => !connectedIds.has(m.id)).map((match) => (
                 <div
                   key={match.id}
                   className="rounded-xl border border-[var(--color-coral)]/20 bg-[var(--color-dark)] p-5 transition-all duration-300 hover:border-[var(--color-coral)]"

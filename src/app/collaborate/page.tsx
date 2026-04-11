@@ -8,6 +8,7 @@ import {
   createCollabPost,
   getCollabPosts,
   getResponseCountsBatch,
+  getMyCollabPosts,
 } from "@/app/actions/collaborate";
 
 const SKILL_CATEGORIES = [
@@ -83,6 +84,8 @@ export default function CollaboratePage() {
   const [categoryFilter, setCategoryFilter] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("Open");
   const [showModal, setShowModal] = useState(false);
+  const [myPosts, setMyPosts] = useState<CollabPost[]>([]);
+  const [showMyPosts, setShowMyPosts] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
 
@@ -92,7 +95,7 @@ export default function CollaboratePage() {
   );
   const [formTitle, setFormTitle] = useState("");
   const [formDescription, setFormDescription] = useState("");
-  const [formCategory, setFormCategory] = useState("");
+  const [formCategories, setFormCategories] = useState<string[]>([]);
   const [formCustomCategory, setFormCustomCategory] = useState("");
   const [formBudget, setFormBudget] = useState("");
   const [formTeamSize, setFormTeamSize] = useState("");
@@ -117,6 +120,13 @@ export default function CollaboratePage() {
     const postIds = (data as CollabPost[]).map((p) => p.id);
     const counts = await getResponseCountsBatch(postIds);
     setResponseCounts(counts);
+
+    // Fetch user's own posts (including filled/closed)
+    if (user) {
+      const mine = await getMyCollabPosts();
+      setMyPosts(mine as CollabPost[]);
+    }
+
     setLoading(false);
   }, [typeFilter, categoryFilter, statusFilter]);
 
@@ -136,7 +146,9 @@ export default function CollaboratePage() {
       type: formType,
       title: formTitle.trim(),
       description: formDescription.trim() || undefined,
-      category: formCategory === "Other" ? (formCustomCategory || "Other") : (formCategory || undefined),
+      category: formCategories.length > 0
+        ? (formCategories.includes("Other") ? [...formCategories.filter(c => c !== "Other"), formCustomCategory || "Other"].join(", ") : formCategories.join(", "))
+        : undefined,
       budget: formBudget.trim() || undefined,
       deadline: formDeadline || undefined,
       team_size: formTeamSize ? parseInt(formTeamSize) : undefined,
@@ -151,7 +163,7 @@ export default function CollaboratePage() {
     // Reset and close
     setFormTitle("");
     setFormDescription("");
-    setFormCategory("");
+    setFormCategories([]);
     setFormBudget("");
     setFormDeadline("");
     setFormTeamSize("");
@@ -298,6 +310,43 @@ export default function CollaboratePage() {
             ))}
           </div>
         </div>
+
+        {/* My Collabs toggle */}
+        {user && myPosts.length > 0 && (
+          <div className="mt-6">
+            <button
+              onClick={() => setShowMyPosts(!showMyPosts)}
+              className="font-[family-name:var(--font-mono)] text-xs text-[var(--color-coral)] underline decoration-dotted underline-offset-4 hover:text-[var(--color-white)]"
+            >
+              {showMyPosts ? "Hide" : "Show"} My Collabs ({myPosts.length})
+            </button>
+            {showMyPosts && (
+              <div className="mt-4 space-y-3">
+                {myPosts.map((post) => (
+                  <Link
+                    key={post.id}
+                    href={`/collaborate/${post.id}`}
+                    className="flex items-center justify-between rounded-lg border border-white/5 bg-[var(--color-dark)] px-4 py-3 transition-all hover:border-[var(--color-coral)]"
+                  >
+                    <div>
+                      <span className="font-[family-name:var(--font-mono)] text-sm text-[var(--color-white)]">{post.title}</span>
+                      {post.category && (
+                        <span className="ml-2 font-[family-name:var(--font-mono)] text-[10px] text-[var(--color-smoke)]">{post.category}</span>
+                      )}
+                    </div>
+                    <span className={`rounded-full px-2.5 py-0.5 font-[family-name:var(--font-mono)] text-[9px] uppercase ${
+                      post.status === "open" ? "bg-[var(--color-lime)]/15 text-[var(--color-lime)]"
+                      : post.status === "filled" ? "bg-[var(--color-sky)]/15 text-[var(--color-sky)]"
+                      : "bg-[var(--color-smoke)]/15 text-[var(--color-smoke)]"
+                    }`}>
+                      {post.status}
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Grid */}
         {loading ? (
@@ -508,22 +557,35 @@ export default function CollaboratePage() {
                 className="w-full rounded-lg border border-[var(--color-ash)] bg-[var(--color-dark)] px-5 py-3 font-[family-name:var(--font-mono)] text-sm text-[var(--color-white)] outline-none placeholder:text-[var(--color-smoke)] focus:border-[var(--color-coral)] resize-none"
               />
 
-              {/* Category */}
-              <select
-                value={formCategory}
-                onChange={(e) => setFormCategory(e.target.value)}
-                className="w-full rounded-lg border border-[var(--color-ash)] bg-[var(--color-dark)] px-5 py-3 font-[family-name:var(--font-mono)] text-sm text-[var(--color-white)] outline-none focus:border-[var(--color-coral)]"
-              >
-                <option value="">Select Category (optional)</option>
-                {SKILL_CATEGORIES.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat}
-                  </option>
-                ))}
-              </select>
+              {/* Categories (multi-select) */}
+              <div>
+                <p className="mb-2 font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-wider text-[var(--color-smoke)]">
+                  Categories (select all that apply)
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {SKILL_CATEGORIES.map((cat) => (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() =>
+                        setFormCategories((prev) =>
+                          prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]
+                        )
+                      }
+                      className={`rounded-full px-3 py-1 font-[family-name:var(--font-mono)] text-[10px] transition-all ${
+                        formCategories.includes(cat)
+                          ? "bg-[var(--color-coral)] text-[var(--color-black)]"
+                          : "border border-[var(--color-ash)] text-[var(--color-smoke)] hover:border-[var(--color-coral)] hover:text-[var(--color-coral)]"
+                      }`}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
               {/* Custom category input when "Other" selected */}
-              {formCategory === "Other" && (
+              {formCategories.includes("Other") && (
                 <input
                   type="text"
                   placeholder="Describe the type of creator..."

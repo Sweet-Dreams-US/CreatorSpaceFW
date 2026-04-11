@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import { createServerSupabaseClient, getSupabaseAdmin } from "@/lib/supabase-server";
 import { getChallengeWithSubmissions, getSubmissionCount, getAcceptanceCount } from "@/app/actions/challenges";
 import ChallengeSubmitForm from "./ChallengeSubmitForm";
 import ChallengeAcceptButton from "./ChallengeAcceptButton";
@@ -73,6 +74,33 @@ export default async function ChallengeDetailPage({
   const canSubmit = isActive && (
     !challenge.submission_deadline || new Date(challenge.submission_deadline).getTime() > Date.now()
   );
+
+  // Check if current user has submitted — only show others' submissions if they have
+  let userHasSubmitted = false;
+  try {
+    const supabase = await createServerSupabaseClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data: creator } = await getSupabaseAdmin()
+        .from("creators")
+        .select("id")
+        .eq("auth_id", user.id)
+        .single();
+      if (creator) {
+        const { data: submission } = await getSupabaseAdmin()
+          .from("challenge_submissions")
+          .select("id")
+          .eq("challenge_id", id)
+          .eq("creator_id", creator.id)
+          .limit(1)
+          .single();
+        userHasSubmitted = !!submission;
+      }
+    }
+  } catch { /* not logged in */ }
+
+  // For completed challenges, always show submissions
+  const showSubmissions = !isActive || userHasSubmitted;
 
   return (
     <main className="min-h-screen bg-[var(--color-black)] px-6 pb-24 pt-32">
@@ -194,8 +222,18 @@ export default async function ChallengeDetailPage({
           <ChallengeAcceptButton challengeId={id} canSubmit={canSubmit} />
         )}
 
-        {/* Submissions Gallery */}
-        {challenge.submissions && challenge.submissions.length > 0 && (
+        {/* Submissions Gallery — only visible after user submits their own (or challenge is completed) */}
+        {!showSubmissions && challenge.submissions && challenge.submissions.length > 0 && (
+          <div className="mt-10 rounded-xl border border-white/5 bg-[var(--color-dark)] p-8 text-center">
+            <p className="font-[family-name:var(--font-mono)] text-sm text-[var(--color-smoke)]">
+              Submit your work first to see what others have created.
+            </p>
+            <p className="mt-1 font-[family-name:var(--font-mono)] text-xs text-[var(--color-smoke)]">
+              {challenge.submissions.length} submission{challenge.submissions.length !== 1 ? "s" : ""} so far
+            </p>
+          </div>
+        )}
+        {showSubmissions && challenge.submissions && challenge.submissions.length > 0 && (
           <section className="mt-10">
             <h2 className="font-[family-name:var(--font-display)] text-xl text-[var(--color-white)]">
               Submissions
