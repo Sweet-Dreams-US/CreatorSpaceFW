@@ -25,8 +25,15 @@ export default function MobileNav() {
   async function handleLogout() {
     const supabase = createClient();
     await supabase.auth.signOut();
+    // Clear stale Supabase cookies as fallback
+    document.cookie.split(";").forEach((c) => {
+      const name = c.trim().split("=")[0];
+      if (name.startsWith("sb-")) {
+        document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
+      }
+    });
     setOpen(false);
-    router.push("/");
+    window.location.href = "/";
   }
 
   const PAGES = [

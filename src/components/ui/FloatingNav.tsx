@@ -25,8 +25,14 @@ export default function FloatingNav() {
   async function handleLogout() {
     const supabase = createClient();
     await supabase.auth.signOut();
-    router.push("/");
-    router.refresh();
+    // Clear any stale Supabase cookies manually as fallback
+    document.cookie.split(";").forEach((c) => {
+      const name = c.trim().split("=")[0];
+      if (name.startsWith("sb-")) {
+        document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
+      }
+    });
+    window.location.href = "/";
   }
 
   useEffect(() => {

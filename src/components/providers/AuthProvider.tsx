@@ -31,7 +31,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const supabase = createClient();
 
     async function loadUser() {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user }, error } = await supabase.auth.getUser();
+
+      if (error || !user) {
+        // Invalid or stale session — clear state
+        setUser(null);
+        setRole(null);
+        setLoading(false);
+        return;
+      }
+
       setUser(user);
 
       if (user) {
