@@ -23,44 +23,29 @@ export default function ResetPasswordPage() {
     async function init() {
       const url = new URL(window.location.href);
 
-      // Check for error in URL params or hash
+      // Check for error in URL params or hash (e.g., expired link)
       const urlError =
         url.searchParams.get("error_description") ||
         url.hash.match(/error_description=([^&]*)/)?.[1];
       if (urlError) {
         setError(decodeURIComponent(urlError.replace(/\+/g, " ")));
-        setReady(false);
         return;
       }
 
-      // Check if we arrived from /auth/confirm (verified=true)
-      const verified = url.searchParams.get("verified") === "true";
-
-      // Try getSession — may need retries after redirect
-      for (let attempt = 0; attempt < (verified ? 5 : 2); attempt++) {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-          setReady(true);
-          return;
-        }
-        // Wait before retry — cookies may not be available immediately
-        if (attempt < (verified ? 4 : 1)) {
-          await new Promise((r) => setTimeout(r, 1000));
-        }
-      }
-
-      if (verified) {
-        // Session was verified but cookies didn't persist — try refreshing
-        window.location.reload();
+      // Session should be set by /auth/confirm route via cookies
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        setReady(true);
         return;
       }
 
+      // No session found — show error with retry link
       setError("No active session. Please request a new password reset link.");
     }
 
     init();
 
-    // Listen for auth state changes
+    // Also listen for PASSWORD_RECOVERY event as backup
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event) => {
