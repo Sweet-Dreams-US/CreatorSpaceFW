@@ -23,61 +23,41 @@ export default function ResetPasswordPage() {
     async function init() {
       const url = new URL(window.location.href);
 
-      // Check for error in URL params (e.g., expired link)
-      const urlError = url.searchParams.get("error_description") || url.hash.match(/error_description=([^&]*)/)?.[1];
+      // Check for error in URL params or hash (e.g., expired link)
+      const urlError =
+        url.searchParams.get("error_description") ||
+        url.hash.match(/error_description=([^&]*)/)?.[1];
       if (urlError) {
         setError(decodeURIComponent(urlError.replace(/\+/g, " ")));
         setReady(false);
         return;
       }
 
-      // If URL has a code param, exchange it for a session first
-      const code = url.searchParams.get("code");
-      if (code) {
-        const { error } = await supabase.auth.exchangeCodeForSession(code);
-        if (!error) {
-          setReady(true);
-          return;
-        } else {
-          setError(error.message);
-          return;
-        }
-      }
-
-      // Check hash fragment for access_token (implicit flow)
-      const hashParams = new URLSearchParams(url.hash.substring(1));
-      const accessToken = hashParams.get("access_token");
-      if (accessToken) {
-        setReady(true);
-        return;
-      }
-
-      // Check if we already have a session
+      // Session should already be established by /auth/callback
+      // Just check if we have a valid session
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         setReady(true);
         return;
       }
+
+      // No session — user may have navigated here directly
+      setError("No active session. Please request a new password reset link.");
     }
 
     init();
 
-    // Also listen for the PASSWORD_RECOVERY event
+    // Listen for auth state changes (backup)
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event) => {
       if (event === "PASSWORD_RECOVERY" || event === "SIGNED_IN") {
         setReady(true);
+        setError("");
       }
     });
 
-    // Fallback — if nothing fires in 5s, let them try anyway
-    const timeout = setTimeout(() => setReady(true), 5000);
-
-    return () => {
-      subscription.unsubscribe();
-      clearTimeout(timeout);
-    };
+    return () => subscription.unsubscribe();
   }, []);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
