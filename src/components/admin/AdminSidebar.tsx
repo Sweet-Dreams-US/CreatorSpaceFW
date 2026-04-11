@@ -21,6 +21,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/admin/challenges", label: "Challenges", icon: "◈" },
   { href: "/admin/inquiries", label: "Inquiries", icon: "✦" },
   { href: "/admin/spotlight", label: "Spotlight", icon: "★" },
+  { href: "/admin/feedback", label: "Feedback", icon: "◬" },
   { href: "/admin/analytics", label: "Analytics", icon: "◉" },
   { href: "/admin/settings", label: "Settings", icon: "◐", adminOnly: true },
 ];
