@@ -128,28 +128,50 @@ function ProjectCard({
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  const [uploadError, setUploadError] = useState("");
+
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // Validate file
+    if (file.size > 5 * 1024 * 1024) {
+      setUploadError("Image must be under 5MB");
+      return;
+    }
+    if (!file.type.startsWith("image/")) {
+      setUploadError("File must be an image");
+      return;
+    }
+
     setUploading(true);
+    setUploadError("");
 
-    const ext = file.name.split(".").pop();
-    const path = `${userId}/projects/${project.id}/${Date.now()}.${ext}`;
-    const supabase = createClient();
+    try {
+      const ext = file.name.split(".").pop();
+      const path = `${userId}/projects/${project.id}/${Date.now()}.${ext}`;
+      const supabase = createClient();
 
-    const { error: uploadError } = await supabase.storage
-      .from("avatars")
-      .upload(path, file, { upsert: false });
+      const { error: storageError } = await supabase.storage
+        .from("avatars")
+        .upload(path, file, { upsert: false });
 
-    if (!uploadError) {
+      if (storageError) {
+        setUploadError(storageError.message);
+        setUploading(false);
+        return;
+      }
+
       const {
         data: { publicUrl },
       } = supabase.storage.from("avatars").getPublicUrl(path);
       await addProjectImage(project.id, `${publicUrl}?t=${Date.now()}`);
       onUpdate();
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : "Upload failed");
     }
+
     setUploading(false);
-    // Reset input
     if (fileRef.current) fileRef.current.value = "";
   };
 
@@ -259,6 +281,11 @@ function ProjectCard({
           className="hidden"
         />
       </div>
+      {uploadError && (
+        <p className="mt-2 font-[family-name:var(--font-mono)] text-xs text-red-400">
+          {uploadError}
+        </p>
+      )}
     </div>
   );
 }
