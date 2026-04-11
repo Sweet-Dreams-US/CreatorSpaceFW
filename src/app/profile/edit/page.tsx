@@ -4,7 +4,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { createClient } from "@/lib/supabase";
-import { updateProfile } from "@/app/actions/profile";
+import { updateProfile, getMyProfile } from "@/app/actions/profile";
 import { logoutAction, changePassword, deleteAccount } from "@/app/actions/auth";
 import { getCreatorProjects } from "@/app/actions/projects";
 import AvatarUpload from "@/components/ui/AvatarUpload";
@@ -99,14 +99,8 @@ export default function ProfileEditPage() {
 
     async function fetchProfile() {
       try {
-        const supabase = createClient();
-        const { data } = await supabase
-          .from("creators")
-          .select(
-            "id, first_name, last_name, company, job_title, social, website, bio, skills, avatar_url, slug, location, email_prefs, can_teach, wants_to_learn"
-          )
-          .eq("auth_id", user!.id)
-          .single();
+        // Use server action — reads cookies server-side, never hangs
+        const data = await getMyProfile();
 
       if (data) {
         setCreatorId(data.id);
@@ -254,15 +248,14 @@ export default function ProfileEditPage() {
             EDIT PROFILE
           </h1>
           <button
-            onClick={async () => {
-              const supabase = createClient();
-              await supabase.auth.signOut();
+            onClick={() => {
               document.cookie.split(";").forEach((c) => {
                 const name = c.trim().split("=")[0];
                 if (name.startsWith("sb-")) {
                   document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
                 }
               });
+              try { createClient().auth.signOut(); } catch {}
               window.location.href = "/";
             }}
             className="rounded-full border border-white/10 px-5 py-2 font-[family-name:var(--font-mono)] text-xs text-[var(--color-smoke)] transition-all hover:border-red-400 hover:text-red-400"

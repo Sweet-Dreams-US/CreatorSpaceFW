@@ -4,6 +4,20 @@ import { revalidatePath } from "next/cache";
 import { createServerSupabaseClient, getSupabaseAdmin } from "@/lib/supabase-server";
 import { isAdmin } from "@/lib/admin";
 
+export async function getMyProfile() {
+  const supabase = await createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data } = await getSupabaseAdmin()
+    .from("creators")
+    .select("id, first_name, last_name, company, job_title, social, website, bio, skills, avatar_url, slug, location, email_prefs, can_teach, wants_to_learn")
+    .eq("auth_id", user.id)
+    .single();
+
+  return data;
+}
+
 export async function updateProfile(formData: FormData) {
   const supabase = await createServerSupabaseClient();
   const {

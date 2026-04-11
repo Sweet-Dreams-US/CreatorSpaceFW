@@ -23,16 +23,16 @@ export default function FloatingNav() {
   const userIsAdmin = !!user && isAdmin(user.email);
   const router = useRouter();
 
-  async function handleLogout() {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    // Clear any stale Supabase cookies manually as fallback
+  function handleLogout() {
+    // Clear cookies first — guaranteed to work even if signOut hangs
     document.cookie.split(";").forEach((c) => {
       const name = c.trim().split("=")[0];
       if (name.startsWith("sb-")) {
         document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
       }
     });
+    // Try signOut but don't wait for it
+    try { createClient().auth.signOut(); } catch {}
     window.location.href = "/";
   }
 
