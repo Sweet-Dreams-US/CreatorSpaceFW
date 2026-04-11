@@ -60,6 +60,35 @@ export async function sendConnectionRequest(toCreatorId: string, message?: strin
     return { error: "Failed to send connection request." };
   }
 
+  // Email notification to the receiver
+  try {
+    const { data: sender } = await getSupabaseAdmin()
+      .from("creators")
+      .select("first_name, last_name, slug")
+      .eq("id", creator.id)
+      .single();
+    const { data: receiver } = await getSupabaseAdmin()
+      .from("creators")
+      .select("first_name, auth_id, slug")
+      .eq("id", toCreatorId)
+      .single();
+    if (sender && receiver?.auth_id) {
+      const { data: authUser } = await getSupabaseAdmin().auth.admin.getUserById(receiver.auth_id);
+      if (authUser?.user?.email) {
+        const { sendConnectionRequestEmail } = await import("@/lib/email");
+        await sendConnectionRequestEmail(
+          authUser.user.email,
+          receiver.first_name || "Creator",
+          `${sender.first_name} ${sender.last_name}`,
+          sender.slug || "",
+          message?.trim()
+        );
+      }
+    }
+  } catch {
+    // Email is non-blocking
+  }
+
   return { success: true };
 }
 

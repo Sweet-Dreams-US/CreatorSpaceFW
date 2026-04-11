@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { sendConnectionRequest, getConnectionStatus } from "@/app/actions/connections";
+import { sendConnectionRequest, getConnectionStatus, respondToConnection } from "@/app/actions/connections";
 
 interface ConnectButtonProps {
   targetCreatorId: string;
@@ -16,6 +16,8 @@ export default function ConnectButton({
   currentCreatorId,
 }: ConnectButtonProps) {
   const [status, setStatus] = useState<string | null>(null);
+  const [connectionId, setConnectionId] = useState<string | null>(null);
+  const [iAmReceiver, setIAmReceiver] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
@@ -32,6 +34,9 @@ export default function ConnectButton({
       const result = await getConnectionStatus(currentCreatorId!, targetCreatorId);
       if (result) {
         setStatus(result.status);
+        setConnectionId(result.id);
+        // Check if the current user is the RECEIVER of this connection
+        setIAmReceiver(result.to_creator_id === currentCreatorId);
       }
       setLoading(false);
     }
@@ -61,11 +66,7 @@ export default function ConnectButton({
     );
   }
 
-  // Don't show connect button on own profile
-  if (currentCreatorId === targetCreatorId) {
-    return null;
-  }
-
+  if (currentCreatorId === targetCreatorId) return null;
   if (loading) {
     return (
       <span className="inline-flex items-center rounded-full border border-[var(--color-ash)] px-5 py-2 font-[family-name:var(--font-mono)] text-xs text-[var(--color-smoke)]">
@@ -77,16 +78,7 @@ export default function ConnectButton({
   if (status === "accepted") {
     return (
       <span className="inline-flex items-center gap-2 rounded-full border border-[var(--color-lime)]/30 bg-[var(--color-lime)]/5 px-5 py-2 font-[family-name:var(--font-mono)] text-xs text-[var(--color-lime)]">
-        <svg
-          width="14"
-          height="14"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
           <polyline points="20 6 9 17 4 12" />
         </svg>
         Connected
@@ -94,7 +86,53 @@ export default function ConnectButton({
     );
   }
 
+  if (status === "declined") {
+    return (
+      <span className="inline-flex items-center rounded-full border border-[var(--color-smoke)]/20 px-5 py-2 font-[family-name:var(--font-mono)] text-xs text-[var(--color-smoke)]">
+        Request Declined
+      </span>
+    );
+  }
+
+  // Pending — show different UI depending on direction
   if (status === "pending") {
+    if (iAmReceiver && connectionId) {
+      // I received this request — show Accept/Decline
+      return (
+        <div className="flex items-center gap-2">
+          <button
+            onClick={async () => {
+              setSending(true);
+              const result = await respondToConnection(connectionId, "accepted");
+              if (result.error) {
+                setSending(false);
+                return;
+              }
+              setStatus("accepted");
+              setSending(false);
+            }}
+            disabled={sending}
+            className="rounded-full bg-[var(--color-lime)] px-4 py-2 font-[family-name:var(--font-mono)] text-xs font-semibold text-[var(--color-black)] transition-all hover:shadow-[0_0_16px_rgba(157,250,119,0.3)] disabled:opacity-50"
+          >
+            Accept
+          </button>
+          <button
+            onClick={async () => {
+              setSending(true);
+              await respondToConnection(connectionId, "declined");
+              setStatus("declined");
+              setSending(false);
+            }}
+            disabled={sending}
+            className="rounded-full border border-[var(--color-ash)] px-4 py-2 font-[family-name:var(--font-mono)] text-xs text-[var(--color-smoke)] transition-all hover:border-red-400 hover:text-red-400 disabled:opacity-50"
+          >
+            Decline
+          </button>
+        </div>
+      );
+    }
+
+    // I sent this request — show waiting state
     return (
       <span className="inline-flex items-center rounded-full border border-[var(--color-smoke)]/20 px-5 py-2 font-[family-name:var(--font-mono)] text-xs text-[var(--color-smoke)]">
         Request Sent
@@ -102,12 +140,14 @@ export default function ConnectButton({
     );
   }
 
+  // No connection yet — show Connect button
   async function handleSend() {
     setSending(true);
     const result = await sendConnectionRequest(targetCreatorId, message);
     setSending(false);
     if (result.success) {
       setStatus("pending");
+      setIAmReceiver(false);
       setShowModal(false);
       setMessage("");
     }

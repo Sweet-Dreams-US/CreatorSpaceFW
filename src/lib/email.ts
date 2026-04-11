@@ -370,6 +370,40 @@ function buildJobReferralHtml(
 </html>`;
 }
 
+export async function sendConnectionRequestEmail(
+  to: string,
+  receiverName: string,
+  senderName: string,
+  senderSlug: string,
+  message?: string | null
+) {
+  return getResend().emails.send({
+    from: FROM_EMAIL,
+    to,
+    subject: `${senderName} wants to connect on Creator Space`,
+    html: `<!DOCTYPE html>
+<html><head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;background:#0a0a0a;font-family:monospace;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#0a0a0a;padding:32px 16px;">
+<tr><td align="center"><table width="100%" style="max-width:560px;">
+<tr><td style="padding:32px;background:#141414;border-radius:12px;border:1px solid #2a2a2a;">
+  <h1 style="margin:0;font-size:20px;color:#fafafa;">New Connection Request</h1>
+  <p style="margin:12px 0 0;font-size:14px;color:#ccc;line-height:1.6;">
+    Hey ${escapeHtml(receiverName)}, <strong style="color:#fa9277;">${escapeHtml(senderName)}</strong> wants to connect with you on Creator Space!
+  </p>
+  ${message ? `<div style="margin:16px 0;padding:12px;background:#0a0a0a;border-radius:8px;border:1px solid #2a2a2a;"><p style="margin:0;font-size:13px;color:#ccc;line-height:1.5;font-style:italic;">&ldquo;${escapeHtml(message)}&rdquo;</p></div>` : ""}
+  <table width="100%" cellpadding="0" cellspacing="0" style="margin:20px 0 0;">
+  <tr><td align="center">
+    <a href="${SITE_URL}/directory/${senderSlug}" style="display:inline-block;background:#fa9277;color:#0a0a0a;font-size:13px;font-weight:bold;text-decoration:none;padding:12px 32px;border-radius:100px;">VIEW THEIR PROFILE</a>
+  </td></tr></table>
+</td></tr>
+<tr><td style="padding:20px 0;text-align:center;">
+  <p style="margin:0;font-size:11px;color:#888;">Creator Space Fort Wayne</p>
+</td></tr></table></td></tr></table>
+</body></html>`,
+  });
+}
+
 export async function sendCollabResponseNotification(
   to: string,
   posterName: string,
