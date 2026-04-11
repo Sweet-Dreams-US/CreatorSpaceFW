@@ -111,7 +111,7 @@ export default function ResetPasswordPage() {
               PASSWORD UPDATED
             </p>
             <p className="mt-2 font-[family-name:var(--font-mono)] text-sm text-[var(--color-smoke)]">
-              Redirecting to your profile...
+              Redirecting to login...
             </p>
           </div>
         )}
