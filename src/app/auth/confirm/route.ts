@@ -36,7 +36,20 @@ export async function GET(request: NextRequest) {
     });
 
     if (!error) {
-      return response;
+      // Add verified=true param so the reset page knows session was just established
+      const successUrl = new URL(`${origin}${next}`);
+      successUrl.searchParams.set("verified", "true");
+      const successResponse = NextResponse.redirect(successUrl.toString());
+      // Copy cookies from the original response to the success response
+      response.cookies.getAll().forEach((cookie) => {
+        successResponse.cookies.set(cookie.name, cookie.value, {
+          path: "/",
+          httpOnly: cookie.name.startsWith("sb-"),
+          sameSite: "lax",
+          secure: true,
+        });
+      });
+      return successResponse;
     }
 
     // Verification failed — redirect with error

@@ -23,7 +23,7 @@ export default function ResetPasswordPage() {
     async function init() {
       const url = new URL(window.location.href);
 
-      // Check for error in URL params or hash (e.g., expired link)
+      // Check for error in URL params or hash
       const urlError =
         url.searchParams.get("error_description") ||
         url.hash.match(/error_description=([^&]*)/)?.[1];
@@ -33,19 +33,34 @@ export default function ResetPasswordPage() {
         return;
       }
 
-      // Implicit flow: hash fragment contains access_token
-      // Supabase client auto-detects and sets session from hash
-      // Just wait for onAuthStateChange to fire
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        setReady(true);
+      // Check if we arrived from /auth/confirm (verified=true)
+      const verified = url.searchParams.get("verified") === "true";
+
+      // Try getSession — may need retries after redirect
+      for (let attempt = 0; attempt < (verified ? 5 : 2); attempt++) {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          setReady(true);
+          return;
+        }
+        // Wait before retry — cookies may not be available immediately
+        if (attempt < (verified ? 4 : 1)) {
+          await new Promise((r) => setTimeout(r, 1000));
+        }
+      }
+
+      if (verified) {
+        // Session was verified but cookies didn't persist — try refreshing
+        window.location.reload();
         return;
       }
+
+      setError("No active session. Please request a new password reset link.");
     }
 
     init();
 
-    // Listen for PASSWORD_RECOVERY event (fires when session from hash is set)
+    // Listen for auth state changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event) => {
@@ -55,17 +70,7 @@ export default function ResetPasswordPage() {
       }
     });
 
-    // Fallback — if nothing fires in 5s and no error, show message
-    const timeout = setTimeout(() => {
-      if (!ready && !error) {
-        setError("Session could not be established. Please request a new reset link.");
-      }
-    }, 5000);
-
-    return () => {
-      subscription.unsubscribe();
-      clearTimeout(timeout);
-    };
+    return () => subscription.unsubscribe();
   }, []);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
