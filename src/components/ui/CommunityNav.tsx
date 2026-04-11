@@ -68,12 +68,24 @@ export default function CommunityNav() {
       {/* Right side: auth */}
       <div className="flex items-center gap-3">
         {loading ? null : user ? (
-          <Link
-            href="/profile/edit"
-            className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-widest text-[var(--color-smoke)] transition-colors hover:text-[var(--color-white)]"
-          >
-            Profile
-          </Link>
+          <>
+            <Link
+              href="/connections"
+              className={`font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-widest transition-colors ${
+                pathname === "/connections"
+                  ? "text-[var(--color-coral)]"
+                  : "text-[var(--color-smoke)] hover:text-[var(--color-white)]"
+              }`}
+            >
+              Connections
+            </Link>
+            <Link
+              href="/profile/edit"
+              className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-widest text-[var(--color-smoke)] transition-colors hover:text-[var(--color-white)]"
+            >
+              Profile
+            </Link>
+          </>
         ) : (
           <Link
             href="/auth/login"

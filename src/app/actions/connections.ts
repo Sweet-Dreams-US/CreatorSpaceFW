@@ -140,7 +140,38 @@ export async function getMyConnections() {
     .or(`from_creator_id.eq.${creator.id},to_creator_id.eq.${creator.id}`)
     .order("created_at", { ascending: false });
 
-  return { connections: connections || [] };
+  if (!connections || connections.length === 0) {
+    return { connections: [], myCreatorId: creator.id };
+  }
+
+  // Fetch creator details for all connected users
+  const creatorIds = new Set<string>();
+  for (const c of connections) {
+    creatorIds.add(c.from_creator_id);
+    creatorIds.add(c.to_creator_id);
+  }
+  creatorIds.delete(creator.id);
+
+  const { data: creators } = await getSupabaseAdmin()
+    .from("creators")
+    .select("id, first_name, last_name, avatar_url, slug, skills")
+    .in("id", Array.from(creatorIds));
+
+  const creatorMap: Record<string, { first_name: string; last_name: string; avatar_url: string | null; slug: string | null; skills: string | null }> = {};
+  for (const c of creators || []) {
+    creatorMap[c.id] = c;
+  }
+
+  const enriched = connections.map((conn) => {
+    const otherId = conn.from_creator_id === creator.id ? conn.to_creator_id : conn.from_creator_id;
+    return {
+      ...conn,
+      isSender: conn.from_creator_id === creator.id,
+      otherCreator: creatorMap[otherId] || null,
+    };
+  });
+
+  return { connections: enriched, myCreatorId: creator.id };
 }
 
 export async function respondToConnection(connectionId: string, status: "accepted" | "declined") {
