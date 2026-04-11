@@ -98,27 +98,15 @@ export default function ProfileEditPage() {
     }
 
     async function fetchProfile() {
-      const supabase = createClient();
-      let { data } = await supabase
-        .from("creators")
-        .select(
-          "id, first_name, last_name, company, job_title, social, website, bio, skills, avatar_url, slug, location, email_prefs, can_teach, wants_to_learn"
-        )
-        .eq("auth_id", user!.id)
-        .single();
-
-      // Retry once after short delay (handles post-confirmation redirect timing)
-      if (!data) {
-        await new Promise((r) => setTimeout(r, 1500));
-        const retry = await supabase
+      try {
+        const supabase = createClient();
+        const { data } = await supabase
           .from("creators")
           .select(
             "id, first_name, last_name, company, job_title, social, website, bio, skills, avatar_url, slug, location, email_prefs, can_teach, wants_to_learn"
           )
           .eq("auth_id", user!.id)
           .single();
-        data = retry.data;
-      }
 
       if (data) {
         setCreatorId(data.id);
@@ -141,6 +129,10 @@ export default function ProfileEditPage() {
         setProjects(projectData as Project[]);
       }
       setLoading(false);
+      } catch {
+        // Fetch failed — don't hang on loading forever
+        setLoading(false);
+      }
     }
 
     fetchProfile();
