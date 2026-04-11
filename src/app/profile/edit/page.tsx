@@ -12,6 +12,7 @@ import ProjectEditor, { type Project } from "@/components/ui/ProjectEditor";
 import ProfileCompleteness from "@/components/ui/ProfileCompleteness";
 import ToggleSwitch from "@/components/ui/ToggleSwitch";
 import SocialFields from "@/components/ui/SocialFields";
+import PasswordInput from "@/components/ui/PasswordInput";
 import Link from "next/link";
 
 const SKILL_OPTIONS = [
@@ -257,14 +258,17 @@ export default function ProfileEditPage() {
           <h1 className="font-[family-name:var(--font-display)] text-4xl text-[var(--color-white)]">
             EDIT PROFILE
           </h1>
-          <form action={logoutAction}>
-            <button
-              type="submit"
-              className="rounded-full border border-white/10 px-5 py-2 font-[family-name:var(--font-mono)] text-xs text-[var(--color-smoke)] transition-all hover:border-red-400 hover:text-red-400"
-            >
-              Log out
-            </button>
-          </form>
+          <button
+            onClick={async () => {
+              const supabase = createClient();
+              await supabase.auth.signOut();
+              router.push("/");
+              router.refresh();
+            }}
+            className="rounded-full border border-white/10 px-5 py-2 font-[family-name:var(--font-mono)] text-xs text-[var(--color-smoke)] transition-all hover:border-red-400 hover:text-red-400"
+          >
+            Log out
+          </button>
         </div>
 
         {profile.slug && (
@@ -560,18 +564,19 @@ export default function ProfileEditPage() {
             CHANGE PASSWORD
           </h2>
           <div className="mt-4 max-w-md space-y-3">
-            <input
-              type="password"
+            <PasswordInput
+              name="new_password"
               placeholder="New password (min 6 characters)"
               value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
+              onChange={setNewPassword}
+              showStrength
               className="w-full border-b border-[var(--color-ash)] bg-transparent px-0 py-2 font-[family-name:var(--font-mono)] text-sm text-[var(--color-white)] outline-none placeholder:text-[var(--color-smoke)] focus:border-[var(--color-coral)]"
             />
-            <input
-              type="password"
+            <PasswordInput
+              name="confirm_password"
               placeholder="Confirm new password"
               value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
+              onChange={setConfirmPassword}
               className="w-full border-b border-[var(--color-ash)] bg-transparent px-0 py-2 font-[family-name:var(--font-mono)] text-sm text-[var(--color-white)] outline-none placeholder:text-[var(--color-smoke)] focus:border-[var(--color-coral)]"
             />
             {passwordMessage && (
