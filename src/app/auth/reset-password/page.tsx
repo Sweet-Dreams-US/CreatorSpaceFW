@@ -51,7 +51,18 @@ export default function ResetPasswordPage() {
 
     setSuccess(true);
     setLoading(false);
-    setTimeout(() => router.push("/profile/edit"), 2000);
+
+    // Clear all sb-* cookies to prevent stale session state,
+    // then redirect to login so user logs in fresh with new password
+    document.cookie.split(";").forEach((c) => {
+      const name = c.trim().split("=")[0];
+      if (name.startsWith("sb-")) {
+        document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
+      }
+    });
+    setTimeout(() => {
+      window.location.href = "/auth/login";
+    }, 2000);
   }
 
   const match =
