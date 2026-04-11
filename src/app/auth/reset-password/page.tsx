@@ -14,6 +14,7 @@ export default function ResetPasswordPage() {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [turnstileToken, setTurnstileToken] = useState("");
+  const [success, setSuccess] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -96,29 +97,31 @@ export default function ResetPasswordPage() {
       return;
     }
 
-    const supabase = createClient();
-    const { error } = await supabase.auth.updateUser({ password });
+    try {
+      const supabase = createClient();
 
-    if (error) {
-      setError(error.message);
+      // Timeout after 10s to prevent infinite hang
+      const result = await Promise.race([
+        supabase.auth.updateUser({ password }),
+        new Promise<{ error: { message: string } }>((_, reject) =>
+          setTimeout(() => reject(new Error("Request timed out. Please try again.")), 10000)
+        ),
+      ]);
+
+      if (result && "error" in result && result.error) {
+        setError(result.error.message);
+        setLoading(false);
+        return;
+      }
+
+      // Success
+      setSuccess(true);
       setLoading(false);
-      return;
+      setTimeout(() => router.push("/profile/edit"), 2000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update password. Please try again.");
+      setLoading(false);
     }
-
-    // Show success then redirect
-    setLoading(false);
-    setError("");
-    setPassword("");
-    setConfirm("");
-    // Brief success state then redirect
-    const el = document.querySelector("form");
-    if (el) {
-      el.innerHTML = `<div class="text-center py-8">
-        <p class="font-[family-name:var(--font-display)] text-2xl text-[var(--color-lime)]">PASSWORD UPDATED</p>
-        <p class="mt-2 font-[family-name:var(--font-mono)] text-sm text-[var(--color-smoke)]">Redirecting to your profile...</p>
-      </div>`;
-    }
-    setTimeout(() => router.push("/profile/edit"), 2000);
   }
 
   const match =
@@ -170,10 +173,21 @@ export default function ResetPasswordPage() {
           </div>
         )}
 
+        {success && (
+          <div className="mt-10 text-center">
+            <p className="font-[family-name:var(--font-display)] text-2xl text-[var(--color-lime)]">
+              PASSWORD UPDATED
+            </p>
+            <p className="mt-2 font-[family-name:var(--font-mono)] text-sm text-[var(--color-smoke)]">
+              Redirecting to your profile...
+            </p>
+          </div>
+        )}
+
         <form
           onSubmit={handleSubmit}
           className="mt-8 space-y-6"
-          style={{ opacity: ready ? 1 : 0.4, pointerEvents: ready ? "auto" : "none" }}
+          style={{ opacity: ready && !success ? 1 : 0.4, pointerEvents: ready && !success ? "auto" : "none", display: success ? "none" : undefined }}
         >
           <PasswordInput
             name="password"

@@ -92,7 +92,10 @@ export default function ProfileEditPage() {
   }, [authLoading, user, router]);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      if (!authLoading) setLoading(false);
+      return;
+    }
 
     async function fetchProfile() {
       const supabase = createClient();
