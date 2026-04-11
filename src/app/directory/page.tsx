@@ -2,9 +2,9 @@
 
 import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { isAdmin } from "@/lib/admin";
+import { getPublicCreators } from "@/app/actions/creators";
 import CommunityNav from "@/components/ui/CommunityNav";
 import BadgeDisplay from "@/components/ui/BadgeDisplay";
 
@@ -65,14 +65,8 @@ export default function DirectoryPage() {
 
   useEffect(() => {
     async function fetchCreators() {
-      const supabase = createClient();
-      const { data } = await supabase
-        .from("creators")
-        .select(
-          "id, first_name, last_name, company, job_title, skills, slug, avatar_url, badges"
-        )
-        .order("created_at", { ascending: false });
-      setCreators(data || []);
+      const data = await getPublicCreators();
+      setCreators(data as Creator[]);
       setLoading(false);
     }
     fetchCreators();

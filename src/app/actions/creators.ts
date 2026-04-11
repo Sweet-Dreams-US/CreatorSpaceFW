@@ -15,6 +15,14 @@ interface JoinFormData {
   turnstileToken?: string;
 }
 
+export async function getPublicCreators() {
+  const { data } = await getSupabaseAdmin()
+    .from("creators")
+    .select("id, first_name, last_name, company, job_title, skills, slug, avatar_url, badges")
+    .order("created_at", { ascending: false });
+  return data || [];
+}
+
 export async function joinCreatorDatabase(data: JoinFormData) {
   // Verify Turnstile token (server-side)
   if (data.turnstileToken) {
