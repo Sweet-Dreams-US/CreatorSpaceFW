@@ -19,10 +19,27 @@ export default function ResetPasswordPage() {
   useEffect(() => {
     const supabase = createClient();
 
-    // Check if we already have a session (user clicked recovery link)
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) setReady(true);
-    });
+    async function init() {
+      // If URL has a code param, exchange it for a session first
+      const url = new URL(window.location.href);
+      const code = url.searchParams.get("code");
+      if (code) {
+        const { error } = await supabase.auth.exchangeCodeForSession(code);
+        if (!error) {
+          setReady(true);
+          return;
+        }
+      }
+
+      // Check if we already have a session (user clicked recovery link)
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        setReady(true);
+        return;
+      }
+    }
+
+    init();
 
     // Also listen for the PASSWORD_RECOVERY event
     const {
@@ -33,8 +50,8 @@ export default function ResetPasswordPage() {
       }
     });
 
-    // Fallback — if nothing fires in 3s, let them try anyway
-    const timeout = setTimeout(() => setReady(true), 3000);
+    // Fallback — if nothing fires in 5s, let them try anyway
+    const timeout = setTimeout(() => setReady(true), 5000);
 
     return () => {
       subscription.unsubscribe();
@@ -68,7 +85,20 @@ export default function ResetPasswordPage() {
       return;
     }
 
-    router.push("/profile/edit");
+    // Show success then redirect
+    setLoading(false);
+    setError("");
+    setPassword("");
+    setConfirm("");
+    // Brief success state then redirect
+    const el = document.querySelector("form");
+    if (el) {
+      el.innerHTML = `<div class="text-center py-8">
+        <p class="font-[family-name:var(--font-display)] text-2xl text-[var(--color-lime)]">PASSWORD UPDATED</p>
+        <p class="mt-2 font-[family-name:var(--font-mono)] text-sm text-[var(--color-smoke)]">Redirecting to your profile...</p>
+      </div>`;
+    }
+    setTimeout(() => router.push("/profile/edit"), 2000);
   }
 
   const match =
