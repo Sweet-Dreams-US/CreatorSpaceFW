@@ -95,13 +95,26 @@ export default function ProfileEditPage() {
 
     async function fetchProfile() {
       const supabase = createClient();
-      const { data } = await supabase
+      let { data } = await supabase
         .from("creators")
         .select(
           "id, first_name, last_name, company, job_title, social, website, bio, skills, avatar_url, slug, location, email_prefs, can_teach, wants_to_learn"
         )
         .eq("auth_id", user!.id)
         .single();
+
+      // Retry once after short delay (handles post-confirmation redirect timing)
+      if (!data) {
+        await new Promise((r) => setTimeout(r, 1500));
+        const retry = await supabase
+          .from("creators")
+          .select(
+            "id, first_name, last_name, company, job_title, social, website, bio, skills, avatar_url, slug, location, email_prefs, can_teach, wants_to_learn"
+          )
+          .eq("auth_id", user!.id)
+          .single();
+        data = retry.data;
+      }
 
       if (data) {
         setCreatorId(data.id);
@@ -201,10 +214,18 @@ export default function ProfileEditPage() {
 
   if (!profile) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[var(--color-black)]">
-        <p className="font-[family-name:var(--font-mono)] text-sm text-[var(--color-smoke)]">
-          Profile not found.
-        </p>
+      <main className="flex min-h-screen items-center justify-center bg-[var(--color-black)] px-6">
+        <div className="text-center">
+          <p className="font-[family-name:var(--font-mono)] text-sm text-[var(--color-smoke)]">
+            Profile not found. This can happen if you just confirmed your email.
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 rounded-full bg-[var(--color-coral)] px-6 py-2 font-[family-name:var(--font-mono)] text-xs font-semibold text-[var(--color-black)]"
+          >
+            Try Again
+          </button>
+        </div>
       </main>
     );
   }
