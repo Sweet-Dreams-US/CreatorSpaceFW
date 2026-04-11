@@ -12,6 +12,9 @@ interface CollabPostData {
   category?: string;
   budget?: string;
   deadline?: string;
+  team_size?: number;
+  positions?: string;
+  scope?: string;
 }
 
 export async function createCollabPost(data: CollabPostData) {
@@ -36,6 +39,9 @@ export async function createCollabPost(data: CollabPostData) {
     category: data.category || null,
     budget: data.budget || null,
     deadline: data.deadline || null,
+    team_size: data.team_size || null,
+    positions: data.positions || null,
+    scope: data.scope || null,
   });
 
   if (error) return { error: error.message };
@@ -114,6 +120,43 @@ export async function respondToCollabPost(postId: string, message: string) {
   }
 
   await awardPoints(creator.id, "collab_response");
+
+  // Email notification to post author
+  try {
+    const { data: post } = await getSupabaseAdmin()
+      .from("collab_posts")
+      .select("title, creator_id")
+      .eq("id", postId)
+      .single();
+    if (post) {
+      const { data: postAuthor } = await getSupabaseAdmin()
+        .from("creators")
+        .select("first_name, auth_id")
+        .eq("id", post.creator_id)
+        .single();
+      const { data: responder } = await getSupabaseAdmin()
+        .from("creators")
+        .select("first_name, last_name")
+        .eq("id", creator.id)
+        .single();
+      if (postAuthor?.auth_id && responder) {
+        const { data: authUser } = await getSupabaseAdmin().auth.admin.getUserById(postAuthor.auth_id);
+        if (authUser?.user?.email) {
+          const { sendCollabResponseNotification } = await import("@/lib/email");
+          await sendCollabResponseNotification(
+            authUser.user.email,
+            postAuthor.first_name || "Creator",
+            `${responder.first_name} ${responder.last_name}`,
+            post.title,
+            postId
+          );
+        }
+      }
+    }
+  } catch {
+    // Email is non-blocking
+  }
+
   revalidatePath(`/collaborate/${postId}`);
   return { success: true };
 }
@@ -211,6 +254,43 @@ export async function respondToCollabResponse(
     .eq("id", responseId);
 
   if (error) return { error: error.message };
+
+  // Email notification to responder about the decision
+  try {
+    const { data: responseData } = await getSupabaseAdmin()
+      .from("collab_responses")
+      .select("creator_id")
+      .eq("id", responseId)
+      .single();
+    const { data: postData } = await getSupabaseAdmin()
+      .from("collab_posts")
+      .select("title")
+      .eq("id", response.post_id)
+      .single();
+    if (responseData && postData) {
+      const { data: responderCreator } = await getSupabaseAdmin()
+        .from("creators")
+        .select("first_name, auth_id")
+        .eq("id", responseData.creator_id)
+        .single();
+      if (responderCreator?.auth_id) {
+        const { data: authUser } = await getSupabaseAdmin().auth.admin.getUserById(responderCreator.auth_id);
+        if (authUser?.user?.email) {
+          const { sendCollabDecisionNotification } = await import("@/lib/email");
+          await sendCollabDecisionNotification(
+            authUser.user.email,
+            responderCreator.first_name || "Creator",
+            postData.title,
+            status as "accepted" | "declined",
+            response.post_id
+          );
+        }
+      }
+    }
+  } catch {
+    // Email is non-blocking
+  }
+
   revalidatePath(`/collaborate/${response.post_id}`);
   return { success: true };
 }

@@ -106,3 +106,42 @@ export async function logoutAction() {
   await supabase.auth.signOut();
   redirect("/");
 }
+
+export async function changePassword(newPassword: string) {
+  const supabase = await createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  if (!newPassword || newPassword.length < 6) {
+    return { error: "Password must be at least 6 characters" };
+  }
+
+  const { error } = await supabase.auth.updateUser({ password: newPassword });
+  if (error) return { error: error.message };
+  return { success: true };
+}
+
+export async function deleteAccount() {
+  const supabase = await createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  // Mark creator as unclaimed (preserve data for the directory)
+  await getSupabaseAdmin()
+    .from("creators")
+    .update({ auth_id: null, claimed: false, updated_at: new Date().toISOString() })
+    .eq("auth_id", user.id);
+
+  // Delete the auth user
+  const { error } = await getSupabaseAdmin().auth.admin.deleteUser(user.id);
+  if (error) return { error: error.message };
+
+  return { success: true };
+}
+
+export async function resendVerificationEmail(email: string) {
+  const supabase = await createServerSupabaseClient();
+  const { error } = await supabase.auth.resend({ type: "signup", email });
+  if (error) return { error: error.message };
+  return { success: true };
+}

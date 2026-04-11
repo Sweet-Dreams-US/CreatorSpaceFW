@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase";
+import { resendVerificationEmail } from "@/app/actions/auth";
 import PasswordInput from "@/components/ui/PasswordInput";
 import TurnstileWidget from "@/components/ui/TurnstileWidget";
 
@@ -11,6 +12,8 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState("");
+  const [resending, setResending] = useState(false);
+  const [resendMessage, setResendMessage] = useState("");
   const router = useRouter();
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -77,9 +80,34 @@ export default function LoginPage() {
           />
 
           {error && (
-            <p className="font-[family-name:var(--font-mono)] text-sm text-red-400">
-              {error}
-            </p>
+            <div>
+              <p className="font-[family-name:var(--font-mono)] text-sm text-red-400">
+                {error}
+              </p>
+              {error.toLowerCase().includes("confirm") && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const form = document.querySelector("form") as HTMLFormElement;
+                    const emailInput = form?.querySelector("input[name=email]") as HTMLInputElement;
+                    if (!emailInput?.value) return;
+                    setResending(true);
+                    const result = await resendVerificationEmail(emailInput.value);
+                    setResendMessage(result.error || "Verification email sent! Check your inbox.");
+                    setResending(false);
+                  }}
+                  disabled={resending}
+                  className="mt-2 font-[family-name:var(--font-mono)] text-xs text-[var(--color-coral)] underline decoration-dotted underline-offset-4 hover:text-[var(--color-white)] disabled:opacity-50"
+                >
+                  {resending ? "Sending..." : "Resend verification email"}
+                </button>
+              )}
+              {resendMessage && (
+                <p className="mt-1 font-[family-name:var(--font-mono)] text-xs text-[var(--color-lime)]">
+                  {resendMessage}
+                </p>
+              )}
+            </div>
           )}
 
           <div className="text-right">

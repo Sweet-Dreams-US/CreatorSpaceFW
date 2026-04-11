@@ -209,3 +209,69 @@ export async function getEventAttendees(eventId: string) {
     };
   });
 }
+
+// --- Event Recaps ---
+
+export async function createEventRecap(eventId: string, data: {
+  summary: string;
+  video_url?: string;
+  highlights?: string;
+}) {
+  const supabase = await createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user || !isAdmin(user.email)) return { error: "Not authorized" };
+
+  const { error } = await getSupabaseAdmin().from("event_recaps").upsert({
+    event_id: eventId,
+    summary: data.summary,
+    video_url: data.video_url || null,
+    highlights: data.highlights || null,
+  }, { onConflict: "event_id" });
+
+  if (error) return { error: error.message };
+  revalidatePath(`/admin/events`);
+  return { success: true };
+}
+
+export async function getEventRecap(eventId: string) {
+  const { data } = await getSupabaseAdmin()
+    .from("event_recaps")
+    .select("*")
+    .eq("event_id", eventId)
+    .single();
+  return data;
+}
+
+export async function addEventPhoto(eventId: string, imageUrl: string, caption?: string) {
+  const supabase = await createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user || !isAdmin(user.email)) return { error: "Not authorized" };
+
+  const { data: maxSort } = await getSupabaseAdmin()
+    .from("event_photos")
+    .select("sort_order")
+    .eq("event_id", eventId)
+    .order("sort_order", { ascending: false })
+    .limit(1);
+
+  const nextSort = (maxSort?.[0]?.sort_order ?? -1) + 1;
+
+  const { error } = await getSupabaseAdmin().from("event_photos").insert({
+    event_id: eventId,
+    image_url: imageUrl,
+    caption: caption || null,
+    sort_order: nextSort,
+  });
+
+  if (error) return { error: error.message };
+  return { success: true };
+}
+
+export async function getEventPhotos(eventId: string) {
+  const { data } = await getSupabaseAdmin()
+    .from("event_photos")
+    .select("*")
+    .eq("event_id", eventId)
+    .order("sort_order", { ascending: true });
+  return data || [];
+}

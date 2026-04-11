@@ -369,3 +369,78 @@ function buildJobReferralHtml(
 </body>
 </html>`;
 }
+
+export async function sendCollabResponseNotification(
+  to: string,
+  posterName: string,
+  responderName: string,
+  postTitle: string,
+  postId: string
+) {
+  return getResend().emails.send({
+    from: FROM_EMAIL,
+    to,
+    subject: `${responderName} wants to collaborate on "${postTitle}"`,
+    html: `<!DOCTYPE html>
+<html><head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;background:#0a0a0a;font-family:monospace;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#0a0a0a;padding:32px 16px;">
+<tr><td align="center"><table width="100%" style="max-width:560px;">
+<tr><td style="padding:32px;background:#141414;border-radius:12px;border:1px solid #2a2a2a;">
+  <h1 style="margin:0;font-size:20px;color:#fafafa;">New Collab Interest</h1>
+  <p style="margin:12px 0 0;font-size:14px;color:#ccc;line-height:1.6;">
+    Hey ${escapeHtml(posterName)}, <strong style="color:#fa9277;">${escapeHtml(responderName)}</strong> is interested in your project "<strong style="color:#fafafa;">${escapeHtml(postTitle)}</strong>".
+  </p>
+  <p style="margin:16px 0 0;font-size:13px;color:#888;">
+    Check their response and accept or decline on the platform.
+  </p>
+  <table width="100%" cellpadding="0" cellspacing="0" style="margin:20px 0 0;">
+  <tr><td align="center">
+    <a href="${SITE_URL}/collaborate/${postId}" style="display:inline-block;background:#fa9277;color:#0a0a0a;font-size:13px;font-weight:bold;text-decoration:none;padding:12px 32px;border-radius:100px;">VIEW RESPONSES</a>
+  </td></tr></table>
+</td></tr>
+<tr><td style="padding:20px 0;text-align:center;">
+  <p style="margin:0;font-size:11px;color:#888;">Creator Space Fort Wayne</p>
+</td></tr>
+</table></td></tr></table>
+</body></html>`,
+  });
+}
+
+export async function sendCollabDecisionNotification(
+  to: string,
+  responderName: string,
+  postTitle: string,
+  decision: "accepted" | "declined",
+  postId: string
+) {
+  const accepted = decision === "accepted";
+  return getResend().emails.send({
+    from: FROM_EMAIL,
+    to,
+    subject: accepted
+      ? `You've been accepted for "${postTitle}"!`
+      : `Update on your request for "${postTitle}"`,
+    html: `<!DOCTYPE html>
+<html><head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;background:#0a0a0a;font-family:monospace;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#0a0a0a;padding:32px 16px;">
+<tr><td align="center"><table width="100%" style="max-width:560px;">
+<tr><td style="padding:32px;background:#141414;border-radius:12px;border:1px solid #2a2a2a;">
+  <h1 style="margin:0;font-size:20px;color:#fafafa;">${accepted ? "You're In!" : "Collaboration Update"}</h1>
+  <p style="margin:12px 0 0;font-size:14px;color:#ccc;line-height:1.6;">
+    Hey ${escapeHtml(responderName)}, your request to collaborate on "<strong style="color:#fafafa;">${escapeHtml(postTitle)}</strong>" has been <strong style="color:${accepted ? "#9dfa77" : "#fa9277"};">${decision}</strong>.
+  </p>
+  ${accepted ? `<p style="margin:12px 0 0;font-size:13px;color:#9dfa77;">The project creator has accepted you — reach out to coordinate!</p>` : `<p style="margin:12px 0 0;font-size:13px;color:#888;">Don't worry — there are always more projects to join on the collab board.</p>`}
+  <table width="100%" cellpadding="0" cellspacing="0" style="margin:20px 0 0;">
+  <tr><td align="center">
+    <a href="${SITE_URL}/collaborate${accepted ? "/" + postId : ""}" style="display:inline-block;background:#fa9277;color:#0a0a0a;font-size:13px;font-weight:bold;text-decoration:none;padding:12px 32px;border-radius:100px;">${accepted ? "VIEW PROJECT" : "BROWSE COLLABS"}</a>
+  </td></tr></table>
+</td></tr>
+<tr><td style="padding:20px 0;text-align:center;">
+  <p style="margin:0;font-size:11px;color:#888;">Creator Space Fort Wayne</p>
+</td></tr>
+</table></td></tr></table>
+</body></html>`,
+  });
+}

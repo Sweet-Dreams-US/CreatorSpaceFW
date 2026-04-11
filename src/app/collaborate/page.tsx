@@ -48,6 +48,9 @@ interface CollabPost {
   category: string | null;
   budget: string | null;
   deadline: string | null;
+  team_size: number | null;
+  positions: string | null;
+  scope: string | null;
   status: string;
   created_at: string;
   creators: Creator;
@@ -91,6 +94,9 @@ export default function CollaboratePage() {
   const [formCategory, setFormCategory] = useState("");
   const [formCustomCategory, setFormCustomCategory] = useState("");
   const [formBudget, setFormBudget] = useState("");
+  const [formTeamSize, setFormTeamSize] = useState("");
+  const [formPositions, setFormPositions] = useState("");
+  const [formScope, setFormScope] = useState("");
   const [formDeadline, setFormDeadline] = useState("");
 
   const fetchPosts = useCallback(async () => {
@@ -132,6 +138,9 @@ export default function CollaboratePage() {
       category: formCategory === "Other" ? (formCustomCategory || "Other") : (formCategory || undefined),
       budget: formBudget.trim() || undefined,
       deadline: formDeadline || undefined,
+      team_size: formTeamSize ? parseInt(formTeamSize) : undefined,
+      positions: formPositions.trim() || undefined,
+      scope: formScope.trim() || undefined,
     });
     setSubmitting(false);
     if (result.error) {
@@ -144,6 +153,9 @@ export default function CollaboratePage() {
     setFormCategory("");
     setFormBudget("");
     setFormDeadline("");
+    setFormTeamSize("");
+    setFormPositions("");
+    setFormScope("");
     setFormType("looking_for");
     setShowModal(false);
     fetchPosts();
@@ -346,8 +358,27 @@ export default function CollaboratePage() {
                     </p>
                   )}
 
-                  {/* Budget + Deadline */}
+                  {/* Positions tags */}
+                  {post.positions && (
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {post.positions.split(",").map((pos: string, i: number) => (
+                        <span
+                          key={i}
+                          className="rounded-full bg-[var(--color-violet)]/10 px-2.5 py-0.5 font-[family-name:var(--font-mono)] text-[10px] text-[var(--color-violet)]"
+                        >
+                          {pos.trim()}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Budget + Deadline + Team size */}
                   <div className="mt-3 flex flex-wrap gap-3">
+                    {post.team_size && (
+                      <span className="font-[family-name:var(--font-mono)] text-[10px] text-[var(--color-coral)]">
+                        {post.team_size} needed
+                      </span>
+                    )}
                     {post.budget && (
                       <span className="font-[family-name:var(--font-mono)] text-[10px] text-[var(--color-lime)]">
                         ${post.budget}
@@ -500,6 +531,35 @@ export default function CollaboratePage() {
                   className="w-full rounded-lg border border-[var(--color-ash)] bg-[var(--color-dark)] px-5 py-3 font-[family-name:var(--font-mono)] text-sm text-[var(--color-white)] outline-none placeholder:text-[var(--color-smoke)] focus:border-[var(--color-coral)]"
                 />
               )}
+
+              {/* Project Scope */}
+              <textarea
+                placeholder="Project scope — what's the idea? What are you building? (optional)"
+                value={formScope}
+                onChange={(e) => setFormScope(e.target.value)}
+                rows={3}
+                className="w-full rounded-lg border border-[var(--color-ash)] bg-[var(--color-dark)] px-5 py-3 font-[family-name:var(--font-mono)] text-sm text-[var(--color-white)] outline-none placeholder:text-[var(--color-smoke)] focus:border-[var(--color-coral)]"
+              />
+
+              {/* Team size + Positions row */}
+              <div className="grid grid-cols-2 gap-3">
+                <input
+                  type="number"
+                  min="1"
+                  max="50"
+                  placeholder="Team size needed"
+                  value={formTeamSize}
+                  onChange={(e) => setFormTeamSize(e.target.value)}
+                  className="w-full rounded-lg border border-[var(--color-ash)] bg-[var(--color-dark)] px-5 py-3 font-[family-name:var(--font-mono)] text-sm text-[var(--color-white)] outline-none placeholder:text-[var(--color-smoke)] focus:border-[var(--color-coral)]"
+                />
+                <input
+                  type="text"
+                  placeholder="Positions (e.g. Editor, DP)"
+                  value={formPositions}
+                  onChange={(e) => setFormPositions(e.target.value)}
+                  className="w-full rounded-lg border border-[var(--color-ash)] bg-[var(--color-dark)] px-5 py-3 font-[family-name:var(--font-mono)] text-sm text-[var(--color-white)] outline-none placeholder:text-[var(--color-smoke)] focus:border-[var(--color-coral)]"
+                />
+              </div>
 
               {/* Budget + Deadline row */}
               <div className="grid grid-cols-2 gap-3">

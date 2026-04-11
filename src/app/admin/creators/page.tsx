@@ -8,6 +8,7 @@ import {
   adminAddCreator,
   adminUpdateCreator,
   exportCreatorsCSV,
+  updateCreatorRole,
 } from "@/app/actions/admin";
 
 interface Creator {
@@ -23,6 +24,7 @@ interface Creator {
   bio: string | null;
   slug: string | null;
   claimed: boolean;
+  role: string | null;
   avatar_url: string | null;
   invite_sent_at: string | null;
   created_at: string;
@@ -224,6 +226,9 @@ export default function AdminCreatorsPage() {
                 Status
               </th>
               <th className="px-3 py-3 text-left font-[family-name:var(--font-mono)] text-xs uppercase tracking-wider text-[var(--color-smoke)]">
+                Role
+              </th>
+              <th className="px-3 py-3 text-left font-[family-name:var(--font-mono)] text-xs uppercase tracking-wider text-[var(--color-smoke)]">
                 Actions
               </th>
             </tr>
@@ -295,6 +300,32 @@ export default function AdminCreatorsPage() {
                     >
                       {creator.claimed ? "CLAIMED" : creator.invite_sent_at ? "INVITED" : "UNCLAIMED"}
                     </span>
+                  </td>
+                  <td className="px-3 py-3">
+                    <select
+                      value={creator.role || "creator"}
+                      onChange={async (e) => {
+                        const newRole = e.target.value;
+                        await updateCreatorRole(creator.id, newRole);
+                        setCreators((prev) =>
+                          prev.map((c) =>
+                            c.id === creator.id ? { ...c, role: newRole } : c
+                          )
+                        );
+                        setMessage(`${creator.first_name} ${creator.last_name} → ${newRole}`);
+                      }}
+                      className={`rounded-full px-2.5 py-1 font-[family-name:var(--font-mono)] text-[10px] font-semibold outline-none ${
+                        creator.role === "admin"
+                          ? "bg-[var(--color-coral)]/15 text-[var(--color-coral)]"
+                          : creator.role === "board"
+                          ? "bg-[var(--color-violet)]/15 text-[var(--color-violet)]"
+                          : "bg-[var(--color-ash)]/30 text-[var(--color-smoke)]"
+                      }`}
+                    >
+                      <option value="creator">Creator</option>
+                      <option value="board">Board</option>
+                      <option value="admin">Admin</option>
+                    </select>
                   </td>
                   <td className="px-3 py-3">
                     <div className="flex gap-2">

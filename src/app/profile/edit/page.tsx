@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { createClient } from "@/lib/supabase";
 import { updateProfile } from "@/app/actions/profile";
-import { logoutAction } from "@/app/actions/auth";
+import { logoutAction, changePassword, deleteAccount } from "@/app/actions/auth";
 import { getCreatorProjects } from "@/app/actions/projects";
 import AvatarUpload from "@/components/ui/AvatarUpload";
 import ProjectEditor, { type Project } from "@/components/ui/ProjectEditor";
@@ -75,6 +75,13 @@ export default function ProfileEditPage() {
   const [emailPrefs, setEmailPrefs] = useState<EmailPrefs>(DEFAULT_EMAIL_PREFS);
   const [canTeach, setCanTeach] = useState<string[]>([]);
   const [wantsToLearn, setWantsToLearn] = useState<string[]>([]);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordMessage, setPasswordMessage] = useState("");
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -136,6 +143,16 @@ export default function ProfileEditPage() {
     return () => document.removeEventListener("mousedown", onClick);
   }, [dropdownOpen]);
 
+  // Unsaved changes warning
+  useEffect(() => {
+    if (!isDirty) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [isDirty]);
+
   const loadProjects = useCallback(async () => {
     if (!creatorId) return;
     const projectData = await getCreatorProjects(creatorId);
@@ -168,6 +185,7 @@ export default function ProfileEditPage() {
       setMessage(result.error);
     } else {
       setMessage("Profile saved.");
+      setIsDirty(false);
     }
   }
 
@@ -252,7 +270,7 @@ export default function ProfileEditPage() {
           />
         </div>
 
-        <form onSubmit={handleSubmit} className="mt-8 space-y-6">
+        <form onSubmit={handleSubmit} onChange={() => setIsDirty(true)} className="mt-8 space-y-6">
           <div className="grid grid-cols-2 gap-6">
             <input
               name="first_name"
@@ -514,6 +532,107 @@ export default function ProfileEditPage() {
             />
           </div>
         )}
+
+        {/* Change Password */}
+        <div className="mt-12 border-t border-[var(--color-ash)] pt-10">
+          <h2 className="font-[family-name:var(--font-display)] text-xl text-[var(--color-white)]">
+            CHANGE PASSWORD
+          </h2>
+          <div className="mt-4 max-w-md space-y-3">
+            <input
+              type="password"
+              placeholder="New password (min 6 characters)"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              className="w-full border-b border-[var(--color-ash)] bg-transparent px-0 py-2 font-[family-name:var(--font-mono)] text-sm text-[var(--color-white)] outline-none placeholder:text-[var(--color-smoke)] focus:border-[var(--color-coral)]"
+            />
+            <input
+              type="password"
+              placeholder="Confirm new password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="w-full border-b border-[var(--color-ash)] bg-transparent px-0 py-2 font-[family-name:var(--font-mono)] text-sm text-[var(--color-white)] outline-none placeholder:text-[var(--color-smoke)] focus:border-[var(--color-coral)]"
+            />
+            {passwordMessage && (
+              <p className={`font-[family-name:var(--font-mono)] text-xs ${passwordMessage.includes("success") || passwordMessage.includes("updated") ? "text-[var(--color-lime)]" : "text-red-400"}`}>
+                {passwordMessage}
+              </p>
+            )}
+            <button
+              onClick={async () => {
+                if (newPassword.length < 6) {
+                  setPasswordMessage("Password must be at least 6 characters");
+                  return;
+                }
+                if (newPassword !== confirmPassword) {
+                  setPasswordMessage("Passwords don't match");
+                  return;
+                }
+                setChangingPassword(true);
+                const result = await changePassword(newPassword);
+                setPasswordMessage(result.error || "Password updated successfully");
+                if (!result.error) {
+                  setNewPassword("");
+                  setConfirmPassword("");
+                }
+                setChangingPassword(false);
+              }}
+              disabled={changingPassword || !newPassword || !confirmPassword}
+              className="rounded-full border border-[var(--color-coral)] px-6 py-2 font-[family-name:var(--font-mono)] text-xs text-[var(--color-coral)] transition-all hover:bg-[var(--color-coral)] hover:text-[var(--color-black)] disabled:opacity-50"
+            >
+              {changingPassword ? "Updating..." : "Update Password"}
+            </button>
+          </div>
+        </div>
+
+        {/* Delete Account */}
+        <div className="mt-12 border-t border-red-400/20 pt-10">
+          <h2 className="font-[family-name:var(--font-display)] text-xl text-red-400">
+            DANGER ZONE
+          </h2>
+          <p className="mt-2 font-[family-name:var(--font-mono)] text-xs text-[var(--color-smoke)]">
+            Deleting your account will remove your login and unlink your profile. Your name and skills will remain in the directory as an unclaimed profile.
+          </p>
+          {!showDeleteConfirm ? (
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              className="mt-4 rounded-full border border-red-400/50 px-6 py-2 font-[family-name:var(--font-mono)] text-xs text-red-400 transition-all hover:bg-red-400 hover:text-[var(--color-black)]"
+            >
+              Delete Account
+            </button>
+          ) : (
+            <div className="mt-4 rounded-xl border border-red-400/20 bg-red-400/5 p-4">
+              <p className="font-[family-name:var(--font-mono)] text-sm text-red-400">
+                Are you sure? This cannot be undone.
+              </p>
+              <div className="mt-3 flex gap-3">
+                <button
+                  onClick={async () => {
+                    setDeleting(true);
+                    const result = await deleteAccount();
+                    if (result.error) {
+                      setPasswordMessage(result.error);
+                      setDeleting(false);
+                      setShowDeleteConfirm(false);
+                    } else {
+                      router.push("/");
+                    }
+                  }}
+                  disabled={deleting}
+                  className="rounded-full bg-red-400 px-6 py-2 font-[family-name:var(--font-mono)] text-xs font-semibold text-[var(--color-black)] disabled:opacity-50"
+                >
+                  {deleting ? "Deleting..." : "Yes, Delete My Account"}
+                </button>
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  className="rounded-full border border-[var(--color-ash)] px-6 py-2 font-[family-name:var(--font-mono)] text-xs text-[var(--color-mist)]"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </main>
   );
