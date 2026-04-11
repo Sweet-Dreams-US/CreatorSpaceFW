@@ -198,7 +198,7 @@ export default function ProfileEditPage() {
     }
   }
 
-  if (authLoading || loading) {
+  if (authLoading || (loading && !profile)) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[var(--color-black)]">
         <p className="font-[family-name:var(--font-mono)] text-sm text-[var(--color-smoke)]">
