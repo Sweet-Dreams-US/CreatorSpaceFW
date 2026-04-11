@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { createBrowserClient } from "@supabase/ssr";
+import { createClient } from "@/lib/supabase";
 import TurnstileWidget from "@/components/ui/TurnstileWidget";
 
 export default function ForgotPasswordPage() {
@@ -25,23 +25,12 @@ export default function ForgotPasswordPage() {
       return;
     }
 
-    // Use implicit flow for password reset to avoid PKCE code_verifier issues
-    // PKCE code_verifier cookie gets lost between the forgot-password page
-    // and the email link click (different tab/context)
-    const supabase = createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookieEncoding: "raw",
-        auth: { flowType: "implicit" },
-      }
-    );
-    const siteUrl =
-      process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
+    const supabase = createClient();
 
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${siteUrl}/auth/reset-password`,
-    });
+    // The email template must be configured in Supabase Dashboard to link to:
+    // {{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery&next=/auth/reset-password
+    // This bypasses PKCE entirely by using token_hash + verifyOtp server-side
+    const { error } = await supabase.auth.resetPasswordForEmail(email);
 
     if (error) {
       setError(error.message);
