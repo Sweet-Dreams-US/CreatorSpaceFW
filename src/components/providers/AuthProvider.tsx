@@ -13,7 +13,7 @@ import { createClient } from "@/lib/supabase";
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  role: string | null; // 'creator' | 'board' | 'admin'
+  role: string | null;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -29,37 +29,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const supabase = createClient();
+    let mounted = true;
 
-    async function loadUser() {
-      const { data: { user }, error } = await supabase.auth.getUser();
-
-      if (error || !user) {
-        // Invalid or stale session — clear state
-        setUser(null);
-        setRole(null);
-        setLoading(false);
-        return;
-      }
-
-      setUser(user);
-
-      if (user) {
-        const { data: creator } = await supabase
+    // Use getSession() for instant local check (no network request)
+    // Then onAuthStateChange handles validation + updates
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!mounted) return;
+      if (session?.user) {
+        setUser(session.user);
+        // Fetch role in background
+        supabase
           .from("creators")
           .select("role")
-          .eq("auth_id", user.id)
-          .single();
-        setRole(creator?.role || "creator");
+          .eq("auth_id", session.user.id)
+          .single()
+          .then(({ data }) => {
+            if (mounted) setRole(data?.role || "creator");
+          });
       }
-
       setLoading(false);
-    }
+    });
 
-    loadUser();
+    // Failsafe: never stay loading longer than 3 seconds
+    const timeout = setTimeout(() => {
+      if (mounted && loading) setLoading(false);
+    }, 3000);
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (!mounted) return;
       const newUser = session?.user ?? null;
       setUser(newUser);
 
@@ -69,7 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .select("role")
           .eq("auth_id", newUser.id)
           .single();
-        setRole(creator?.role || "creator");
+        if (mounted) setRole(creator?.role || "creator");
       } else {
         setRole(null);
       }
@@ -77,7 +76,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      clearTimeout(timeout);
+      subscription.unsubscribe();
+    };
   }, []);
 
   return (
