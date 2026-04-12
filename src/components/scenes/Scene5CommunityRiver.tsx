@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { gsap, ScrollTrigger } from "@/lib/gsap";
-import JoinFormModal from "@/components/ui/JoinFormModal";
+// JoinFormModal removed — signup is the single join flow now
 
 const DISCIPLINES = [
   { text: "PHOTOGRAPHERS", color: "#fa9277" },
@@ -72,7 +72,6 @@ function Separator({ color }: { color: string }) {
 
 export default function Scene5CommunityRiver() {
   const sectionRef = useRef<HTMLDivElement>(null);
-  const [modalOpen, setModalOpen] = useState(false);
 
   useEffect(() => {
     if (!sectionRef.current) return;
@@ -192,12 +191,12 @@ export default function Scene5CommunityRiver() {
           ADD YOUR NAME.
         </p>
         <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
-          <button
-            onClick={() => setModalOpen(true)}
+          <Link
+            href="/auth/signup"
             className="rounded-full bg-[var(--color-coral)] px-8 py-3 font-[family-name:var(--font-mono)] text-xs font-semibold text-[var(--color-black)] transition-all duration-300 hover:scale-105 hover:shadow-[0_0_24px_#fa927740]"
           >
             Join the Database
-          </button>
+          </Link>
           <Link
             href="/directory"
             className="rounded-full border border-white/20 px-8 py-3 font-[family-name:var(--font-mono)] text-xs text-[var(--color-mist)] transition-all duration-300 hover:border-white/40 hover:text-[var(--color-white)]"
@@ -207,7 +206,6 @@ export default function Scene5CommunityRiver() {
         </div>
       </div>
 
-      <JoinFormModal open={modalOpen} onClose={() => setModalOpen(false)} />
     </section>
   );
 }
