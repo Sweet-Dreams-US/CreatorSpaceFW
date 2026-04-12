@@ -13,6 +13,8 @@ const POINTS_MAP: Record<string, number> = {
   connection_made: 2,
   challenge_submission: 3,
   profile_completeness: 1, // awarded per field filled
+  invite_sent: 2,
+  invite_claimed: 5, // bonus when invite leads to signup
 };
 
 export async function awardPoints(
@@ -206,6 +208,8 @@ const ACTION_LABELS: Record<string, string> = {
   connection_made: "Connect with a creator",
   challenge_submission: "Submit to a challenge",
   profile_completeness: "Complete a profile field",
+  invite_sent: "Invite a friend",
+  invite_claimed: "Friend signs up from your invite",
 };
 
 export async function getCurrentSpotlight() {

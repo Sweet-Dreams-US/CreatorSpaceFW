@@ -98,6 +98,19 @@ export async function claimOrCreateCreator(data: ClaimData) {
     if (error) return { error: "Failed to create profile." };
   }
 
+  // Track invite referral if this email was invited by someone
+  try {
+    const { trackInviteClaim } = await import("./invites");
+    const creatorId = existingId || (await getSupabaseAdmin()
+      .from("creators")
+      .select("id")
+      .eq("auth_id", userId)
+      .single()).data?.id;
+    if (creatorId) {
+      await trackInviteClaim(email, creatorId);
+    }
+  } catch { /* non-blocking */ }
+
   return { success: true };
 }
 

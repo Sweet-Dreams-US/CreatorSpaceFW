@@ -6,6 +6,7 @@ import { useAuth } from "@/components/providers/AuthProvider";
 import { createClient } from "@/lib/supabase";
 import { updateProfile, getMyProfile } from "@/app/actions/profile";
 import { logoutAction, changePassword, deleteAccount } from "@/app/actions/auth";
+import { sendUserInvite, getMyInvites } from "@/app/actions/invites";
 import { getCreatorProjects } from "@/app/actions/projects";
 import AvatarUpload from "@/components/ui/AvatarUpload";
 import ProjectEditor, { type Project } from "@/components/ui/ProjectEditor";
@@ -83,6 +84,10 @@ export default function ProfileEditPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviting, setInviting] = useState(false);
+  const [inviteMessage, setInviteMessage] = useState("");
+  const [myInvites, setMyInvites] = useState<{ id: string; email: string; claimed: boolean; created_at: string }[]>([]);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -118,9 +123,13 @@ export default function ProfileEditPage() {
         if (data.email_prefs) {
           setEmailPrefs({ ...DEFAULT_EMAIL_PREFS, ...data.email_prefs });
         }
-        // Load projects
-        const projectData = await getCreatorProjects(data.id);
+        // Load projects + invites
+        const [projectData, inviteData] = await Promise.all([
+          getCreatorProjects(data.id),
+          getMyInvites(),
+        ]);
         setProjects(projectData as Project[]);
+        setMyInvites(inviteData as typeof myInvites);
       }
       setLoading(false);
       } catch {
@@ -556,6 +565,66 @@ export default function ProfileEditPage() {
             />
           </div>
         )}
+
+        {/* Invite Friends */}
+        <div className="mt-12 border-t border-[var(--color-ash)] pt-10">
+          <h2 className="font-[family-name:var(--font-display)] text-xl text-[var(--color-white)]">
+            INVITE FRIENDS
+          </h2>
+          <p className="mt-1 font-[family-name:var(--font-mono)] text-xs text-[var(--color-smoke)]">
+            Earn points for every friend you bring to Creator Space
+          </p>
+          <div className="mt-4 flex max-w-md gap-3">
+            <input
+              type="email"
+              placeholder="Friend's email"
+              value={inviteEmail}
+              onChange={(e) => setInviteEmail(e.target.value)}
+              className="flex-1 border-b border-[var(--color-ash)] bg-transparent px-0 py-2 font-[family-name:var(--font-mono)] text-sm text-[var(--color-white)] outline-none placeholder:text-[var(--color-smoke)] focus:border-[var(--color-coral)]"
+            />
+            <button
+              onClick={async () => {
+                if (!inviteEmail.trim()) return;
+                setInviting(true);
+                setInviteMessage("");
+                const result = await sendUserInvite(inviteEmail.trim());
+                if (result.error) {
+                  setInviteMessage(result.error);
+                } else {
+                  setInviteMessage("Invite sent!");
+                  setInviteEmail("");
+                  const updated = await getMyInvites();
+                  setMyInvites(updated as typeof myInvites);
+                }
+                setInviting(false);
+              }}
+              disabled={inviting || !inviteEmail.includes("@")}
+              className="rounded-full border border-[var(--color-coral)] px-5 py-2 font-[family-name:var(--font-mono)] text-xs text-[var(--color-coral)] transition-all hover:bg-[var(--color-coral)] hover:text-[var(--color-black)] disabled:opacity-50"
+            >
+              {inviting ? "Sending..." : "Send Invite"}
+            </button>
+          </div>
+          {inviteMessage && (
+            <p className={`mt-2 font-[family-name:var(--font-mono)] text-xs ${inviteMessage.includes("sent") ? "text-[var(--color-lime)]" : "text-red-400"}`}>
+              {inviteMessage}
+            </p>
+          )}
+          {myInvites.length > 0 && (
+            <div className="mt-4 space-y-1.5">
+              <p className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-wider text-[var(--color-smoke)]">
+                Your Invites ({myInvites.length})
+              </p>
+              {myInvites.map((inv) => (
+                <div key={inv.id} className="flex items-center justify-between py-1">
+                  <span className="font-[family-name:var(--font-mono)] text-xs text-[var(--color-mist)]">{inv.email}</span>
+                  <span className={`rounded-full px-2 py-0.5 font-[family-name:var(--font-mono)] text-[9px] ${inv.claimed ? "bg-[var(--color-lime)]/15 text-[var(--color-lime)]" : "bg-[var(--color-smoke)]/15 text-[var(--color-smoke)]"}`}>
+                    {inv.claimed ? "JOINED" : "PENDING"}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
         {/* Change Password */}
         <div className="mt-12 border-t border-[var(--color-ash)] pt-10">

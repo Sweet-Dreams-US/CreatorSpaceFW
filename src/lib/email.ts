@@ -370,6 +370,37 @@ function buildJobReferralHtml(
 </html>`;
 }
 
+export async function sendUserInviteEmail(
+  to: string,
+  inviterName: string
+) {
+  return getResend().emails.send({
+    from: FROM_EMAIL,
+    to,
+    subject: `${inviterName} invited you to Creator Space Fort Wayne`,
+    html: `<!DOCTYPE html>
+<html><head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;background:#0a0a0a;font-family:monospace;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#0a0a0a;padding:32px 16px;">
+<tr><td align="center"><table width="100%" style="max-width:560px;">
+<tr><td style="padding:32px;background:#141414;border-radius:12px;border:1px solid #2a2a2a;">
+  <h1 style="margin:0;font-size:22px;color:#fafafa;">You're Invited!</h1>
+  <p style="margin:12px 0 0;font-size:14px;color:#ccc;line-height:1.6;">
+    <strong style="color:#fa9277;">${escapeHtml(inviterName)}</strong> thinks you'd be a great fit for Creator Space Fort Wayne — a free platform for local creators to connect, collaborate, and grow.
+  </p>
+  <table width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0 0;">
+  <tr><td align="center">
+    <a href="${SITE_URL}/auth/signup" style="display:inline-block;background:#fa9277;color:#0a0a0a;font-size:14px;font-weight:bold;text-decoration:none;padding:14px 40px;border-radius:100px;letter-spacing:1px;">JOIN CREATOR SPACE</a>
+  </td></tr></table>
+</td></tr>
+<tr><td style="padding:20px 0;text-align:center;">
+  <p style="margin:0;font-size:11px;color:#888;">Creator Space Fort Wayne — free monthly meetups for local creators</p>
+</td></tr>
+</table></td></tr></table>
+</body></html>`,
+  });
+}
+
 export async function sendConnectionRequestEmail(
   to: string,
   receiverName: string,

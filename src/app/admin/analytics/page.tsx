@@ -134,7 +134,7 @@ export default function AnalyticsPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="max-w-full space-y-8 overflow-x-hidden">
       {/* Header */}
       <div>
         <h1 className="font-[family-name:var(--font-display)] text-3xl text-[var(--color-white)]">

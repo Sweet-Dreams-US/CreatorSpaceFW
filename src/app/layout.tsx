@@ -5,6 +5,7 @@ import PageViewTracker from "@/components/tracking/PageViewTracker";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { OrganizationJsonLd, WebsiteJsonLd } from "@/components/seo/JsonLd";
 import { Analytics } from "@vercel/analytics/next";
+import FeedbackButton from "@/components/ui/FeedbackButton";
 import "./globals.css";
 
 const changaOne = Changa_One({
@@ -111,6 +112,7 @@ export default function RootLayout({
         <AuthProvider>
           <PageViewTracker />
           <ErrorBoundary>{children}</ErrorBoundary>
+          <FeedbackButton />
         </AuthProvider>
         <Analytics />
       </body>
