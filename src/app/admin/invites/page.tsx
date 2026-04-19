@@ -42,6 +42,13 @@ export default function AdminInvitesPage() {
   const notYetInvited = invitable.filter((c) => !c.invite_sent_at);
   const invalidEmail = unclaimed.filter((c) => !isValidEmail(c.email));
 
+  // Resendable: invited before today (not invited today)
+  const today = new Date().toISOString().slice(0, 10);
+  const resendable = alreadyInvited.filter((c) => {
+    if (!c.invite_sent_at) return false;
+    return c.invite_sent_at.slice(0, 10) !== today;
+  });
+
   const sendInvite = async (creatorId: string) => {
     setSendingId(creatorId);
     try {
@@ -157,6 +164,43 @@ export default function AdminInvitesPage() {
             {sending
               ? `Sending... (${progress.sent}/${progress.total})`
               : `Send All Invites (${notYetInvited.length})`}
+          </button>
+        </div>
+      )}
+
+      {/* Resend Invites */}
+      {resendable.length > 0 && (
+        <div className="mt-4">
+          <button
+            onClick={async () => {
+              if (!confirm(`Resend invites to ${resendable.length} creators who were NOT invited today?`)) return;
+              setSending(true);
+              setProgress({ sent: 0, failed: 0, total: resendable.length });
+              try {
+                const res = await fetch("/api/admin/send-invites", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ creatorIds: resendable.map((c) => c.id), resend: true }),
+                });
+                const data = await res.json();
+                setProgress({ sent: data.sent, failed: data.failed, total: resendable.length });
+                setMessage(
+                  data.sent > 0
+                    ? `Resent ${data.sent} invite${data.sent !== 1 ? "s" : ""}${data.failed > 0 ? ` (${data.failed} failed)` : ""}`
+                    : `Failed: ${data.error || data.firstError || "Unknown error"}`
+                );
+                loadCreators();
+              } catch {
+                setMessage("Network error resending invites.");
+              }
+              setSending(false);
+            }}
+            disabled={sending}
+            className="rounded-full border border-[var(--color-violet)] px-8 py-3 font-[family-name:var(--font-mono)] text-sm text-[var(--color-violet)] transition-all hover:bg-[var(--color-violet)] hover:text-[var(--color-black)] disabled:opacity-50"
+          >
+            {sending
+              ? `Resending... (${progress.sent}/${progress.total})`
+              : `Resend to ${resendable.length} (not invited today)`}
           </button>
         </div>
       )}
