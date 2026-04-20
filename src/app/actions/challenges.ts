@@ -18,7 +18,7 @@ interface ChallengeData {
   instagram_handle?: string;
   show_hashtag?: boolean;
   show_instagram?: boolean;
-  requirements?: { title: string; description?: string; points: number }[];
+  requirements?: { title: string; description?: string; points: number; auto_type?: string; auto_threshold?: number }[];
 }
 
 export async function createChallenge(data: ChallengeData) {
@@ -54,9 +54,53 @@ export async function createChallenge(data: ChallengeData) {
       description: r.description || null,
       points: r.points || 1,
       sort_order: i,
+      auto_type: r.auto_type || null,
+      auto_threshold: r.auto_threshold || 1,
     }));
     await getSupabaseAdmin().from("challenge_requirements").insert(reqs);
   }
+
+  // Notify all claimed creators about the new challenge
+  try {
+    const { createNotification } = await import("./notifications");
+    const { data: claimedCreators } = await getSupabaseAdmin()
+      .from("creators")
+      .select("id, first_name, auth_id")
+      .not("auth_id", "is", null)
+      .eq("claimed", true);
+
+    if (claimedCreators) {
+      // In-app notifications
+      for (const c of claimedCreators) {
+        await createNotification({
+          creatorId: c.id,
+          type: "challenge",
+          title: `New Challenge: ${data.title}`,
+          body: data.description?.substring(0, 100),
+          link: `/challenges`,
+        });
+      }
+
+      // Email notifications (fire-and-forget)
+      try {
+        const { sendChallengeNotificationEmail } = await import("@/lib/email");
+        const authIds = claimedCreators.filter((c) => c.auth_id).map((c) => c.auth_id!);
+        const emailResults = await Promise.allSettled(
+          authIds.map(async (authId) => {
+            const { data: authUser } = await getSupabaseAdmin().auth.admin.getUserById(authId);
+            return authUser?.user?.email;
+          })
+        );
+        const emails = emailResults
+          .filter((r) => r.status === "fulfilled" && r.value)
+          .map((r) => (r as PromiseFulfilledResult<string>).value);
+
+        for (const email of emails) {
+          await sendChallengeNotificationEmail(email, data.title, data.description || "");
+        }
+      } catch { /* email non-blocking */ }
+    }
+  } catch { /* notification non-blocking */ }
 
   revalidatePath("/challenges");
   return { success: true };
@@ -275,6 +319,137 @@ export async function getSubmissionCountsBatch(challengeIds: string[]) {
     counts[row.challenge_id] = (counts[row.challenge_id] || 0) + 1;
   }
   return counts;
+}
+
+// --- Auto-tracking for challenge requirements ---
+
+export async function checkAutoRequirements(creatorId: string) {
+  // Get all active challenges
+  const { data: activeChallenges } = await getSupabaseAdmin()
+    .from("challenges")
+    .select("id, starts_at, ends_at")
+    .eq("status", "active");
+
+  if (!activeChallenges || activeChallenges.length === 0) return;
+
+  for (const challenge of activeChallenges) {
+    // Get auto-tracked requirements for this challenge
+    const { data: autoReqs } = await getSupabaseAdmin()
+      .from("challenge_requirements")
+      .select("id, auto_type, auto_threshold")
+      .eq("challenge_id", challenge.id)
+      .not("auto_type", "is", null);
+
+    if (!autoReqs || autoReqs.length === 0) continue;
+
+    // Check if user accepted this challenge
+    const { data: acceptance } = await getSupabaseAdmin()
+      .from("challenge_acceptances")
+      .select("id")
+      .eq("challenge_id", challenge.id)
+      .eq("creator_id", creatorId)
+      .single();
+
+    if (!acceptance) continue;
+
+    // Get already completed requirements
+    const { data: completions } = await getSupabaseAdmin()
+      .from("challenge_requirement_completions")
+      .select("requirement_id")
+      .eq("creator_id", creatorId)
+      .in("requirement_id", autoReqs.map((r) => r.id));
+
+    const completedSet = new Set((completions || []).map((c) => c.requirement_id));
+
+    // Check each auto requirement
+    for (const req of autoReqs) {
+      if (completedSet.has(req.id)) continue; // Already done
+
+      let met = false;
+      const threshold = req.auto_threshold || 1;
+
+      // Date range filter for challenge period
+      const dateFilter: { gte?: string; lte?: string } = {};
+      if (challenge.starts_at) dateFilter.gte = challenge.starts_at;
+      if (challenge.ends_at) dateFilter.lte = challenge.ends_at;
+
+      switch (req.auto_type) {
+        case "collab_post": {
+          let q = getSupabaseAdmin()
+            .from("collab_posts")
+            .select("id", { count: "exact", head: true })
+            .eq("creator_id", creatorId);
+          if (dateFilter.gte) q = q.gte("created_at", dateFilter.gte);
+          if (dateFilter.lte) q = q.lte("created_at", dateFilter.lte);
+          const { count } = await q;
+          met = (count || 0) >= threshold;
+          break;
+        }
+        case "collab_post_positions": {
+          let q = getSupabaseAdmin()
+            .from("collab_posts")
+            .select("positions")
+            .eq("creator_id", creatorId)
+            .not("positions", "is", null);
+          if (dateFilter.gte) q = q.gte("created_at", dateFilter.gte);
+          if (dateFilter.lte) q = q.lte("created_at", dateFilter.lte);
+          const { data: posts } = await q;
+          const hasEnough = (posts || []).some((p) => {
+            const count = p.positions?.split(",").filter(Boolean).length || 0;
+            return count >= threshold;
+          });
+          met = hasEnough;
+          break;
+        }
+        case "collab_post_scope": {
+          let q = getSupabaseAdmin()
+            .from("collab_posts")
+            .select("id", { count: "exact", head: true })
+            .eq("creator_id", creatorId)
+            .not("scope", "is", null);
+          if (dateFilter.gte) q = q.gte("created_at", dateFilter.gte);
+          if (dateFilter.lte) q = q.lte("created_at", dateFilter.lte);
+          const { count } = await q;
+          met = (count || 0) >= 1;
+          break;
+        }
+        case "collab_responses": {
+          let q = getSupabaseAdmin()
+            .from("collab_responses")
+            .select("id", { count: "exact", head: true })
+            .eq("creator_id", creatorId);
+          if (dateFilter.gte) q = q.gte("created_at", dateFilter.gte);
+          if (dateFilter.lte) q = q.lte("created_at", dateFilter.lte);
+          const { count } = await q;
+          met = (count || 0) >= threshold;
+          break;
+        }
+        case "challenge_accept": {
+          met = true; // Already checked above
+          break;
+        }
+      }
+
+      if (met) {
+        // Auto-complete this requirement
+        const { error } = await getSupabaseAdmin()
+          .from("challenge_requirement_completions")
+          .insert({ requirement_id: req.id, creator_id: creatorId });
+
+        if (!error) {
+          // Get points value
+          const { data: reqData } = await getSupabaseAdmin()
+            .from("challenge_requirements")
+            .select("points")
+            .eq("id", req.id)
+            .single();
+          if (reqData) {
+            await awardPoints(creatorId, "challenge_requirement", req.id, reqData.points);
+          }
+        }
+      }
+    }
+  }
 }
 
 // --- Challenge Requirements ---

@@ -401,6 +401,39 @@ export async function sendUserInviteEmail(
   });
 }
 
+export async function sendChallengeNotificationEmail(
+  to: string,
+  challengeTitle: string,
+  challengeDescription: string
+) {
+  return getResend().emails.send({
+    from: FROM_EMAIL,
+    to,
+    subject: `New Challenge: ${challengeTitle} — Creator Space`,
+    html: `<!DOCTYPE html>
+<html><head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;background:#0a0a0a;font-family:monospace;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#0a0a0a;padding:32px 16px;">
+<tr><td align="center"><table width="100%" style="max-width:560px;">
+<tr><td style="padding:32px;background:#141414;border-radius:12px;border:1px solid #2a2a2a;">
+  <p style="margin:0;font-size:12px;color:#d377fa;text-transform:uppercase;letter-spacing:4px;text-align:center;">NEW CHALLENGE</p>
+  <h1 style="margin:12px 0 0;font-size:22px;color:#fafafa;text-align:center;">${escapeHtml(challengeTitle)}</h1>
+  <p style="margin:16px 0 0;font-size:14px;color:#ccc;line-height:1.6;">
+    ${escapeHtml(challengeDescription).substring(0, 300).replace(/\n/g, "<br>")}
+  </p>
+  <table width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0 0;">
+  <tr><td align="center">
+    <a href="${SITE_URL}/challenges" style="display:inline-block;background:#fa9277;color:#0a0a0a;font-size:14px;font-weight:bold;text-decoration:none;padding:14px 40px;border-radius:100px;letter-spacing:1px;">VIEW CHALLENGE</a>
+  </td></tr></table>
+</td></tr>
+<tr><td style="padding:20px 0;text-align:center;">
+  <p style="margin:0;font-size:11px;color:#888;">Creator Space Fort Wayne</p>
+</td></tr>
+</table></td></tr></table>
+</body></html>`,
+  });
+}
+
 export async function sendConnectionRequestEmail(
   to: string,
   receiverName: string,
