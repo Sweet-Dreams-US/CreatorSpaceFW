@@ -15,12 +15,14 @@ const POINTS_MAP: Record<string, number> = {
   profile_completeness: 1, // awarded per field filled
   invite_sent: 2,
   invite_claimed: 5, // bonus when invite leads to signup
+  challenge_requirement: 0, // uses requirement's own points value
 };
 
 export async function awardPoints(
   creatorId: string,
   actionType: string,
-  referenceId?: string
+  referenceId?: string,
+  customPoints?: number
 ) {
   try {
     // Only award points to claimed creators
@@ -31,7 +33,7 @@ export async function awardPoints(
       .single();
     if (!creator?.claimed) return;
 
-    const points = POINTS_MAP[actionType] || 1;
+    const points = customPoints ?? (POINTS_MAP[actionType] || 1);
     await getSupabaseAdmin().from("creator_points").insert({
       creator_id: creatorId,
       action_type: actionType,

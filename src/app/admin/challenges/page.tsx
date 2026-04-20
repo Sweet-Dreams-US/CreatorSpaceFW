@@ -44,6 +44,9 @@ export default function AdminChallengesPage() {
   const [formRules, setFormRules] = useState("");
   const [formHashtag, setFormHashtag] = useState("");
   const [formInstagram, setFormInstagram] = useState("");
+  const [formShowHashtag, setFormShowHashtag] = useState(true);
+  const [formShowInstagram, setFormShowInstagram] = useState(true);
+  const [formRequirements, setFormRequirements] = useState<{ title: string; description: string; points: number }[]>([]);
   const [creating, setCreating] = useState(false);
 
   const load = useCallback(async () => {
@@ -77,6 +80,9 @@ export default function AdminChallengesPage() {
       rules: formRules || undefined,
       hashtag: formHashtag || undefined,
       instagram_handle: formInstagram || undefined,
+      show_hashtag: formShowHashtag,
+      show_instagram: formShowInstagram,
+      requirements: formRequirements.filter((r) => r.title.trim()),
     });
     if (result.error) {
       setMessage(`Error: ${result.error}`);
@@ -90,6 +96,9 @@ export default function AdminChallengesPage() {
       setFormRules("");
       setFormHashtag("");
       setFormInstagram("");
+      setFormShowHashtag(true);
+      setFormShowInstagram(true);
+      setFormRequirements([]);
       setShowForm(false);
       load();
     }
@@ -260,30 +269,111 @@ export default function AdminChallengesPage() {
               />
             </div>
 
-            {/* Social Integration */}
+            {/* Social Integration with toggles */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="mb-1 block font-[family-name:var(--font-mono)] text-xs uppercase tracking-wider text-[var(--color-smoke)]">
-                  Hashtag
-                </label>
+                <div className="mb-1 flex items-center justify-between">
+                  <label className="font-[family-name:var(--font-mono)] text-xs uppercase tracking-wider text-[var(--color-smoke)]">
+                    Hashtag
+                  </label>
+                  <button type="button" onClick={() => setFormShowHashtag(!formShowHashtag)} className={`rounded-full px-2 py-0.5 font-[family-name:var(--font-mono)] text-[9px] ${formShowHashtag ? "bg-[var(--color-lime)]/15 text-[var(--color-lime)]" : "bg-[var(--color-smoke)]/15 text-[var(--color-smoke)]"}`}>
+                    {formShowHashtag ? "ON" : "OFF"}
+                  </button>
+                </div>
                 <input
                   value={formHashtag}
                   onChange={(e) => setFormHashtag(e.target.value)}
                   placeholder="#CSFWChallenge"
                   className={inputClass}
+                  disabled={!formShowHashtag}
                 />
               </div>
               <div>
-                <label className="mb-1 block font-[family-name:var(--font-mono)] text-xs uppercase tracking-wider text-[var(--color-smoke)]">
-                  Instagram Handle
-                </label>
+                <div className="mb-1 flex items-center justify-between">
+                  <label className="font-[family-name:var(--font-mono)] text-xs uppercase tracking-wider text-[var(--color-smoke)]">
+                    Instagram Handle
+                  </label>
+                  <button type="button" onClick={() => setFormShowInstagram(!formShowInstagram)} className={`rounded-full px-2 py-0.5 font-[family-name:var(--font-mono)] text-[9px] ${formShowInstagram ? "bg-[var(--color-lime)]/15 text-[var(--color-lime)]" : "bg-[var(--color-smoke)]/15 text-[var(--color-smoke)]"}`}>
+                    {formShowInstagram ? "ON" : "OFF"}
+                  </button>
+                </div>
                 <input
                   value={formInstagram}
                   onChange={(e) => setFormInstagram(e.target.value)}
                   placeholder="@creatorspacefw"
                   className={inputClass}
+                  disabled={!formShowInstagram}
                 />
               </div>
+            </div>
+
+            {/* Trackable Requirements */}
+            <div>
+              <div className="mb-2 flex items-center justify-between">
+                <label className="font-[family-name:var(--font-mono)] text-xs uppercase tracking-wider text-[var(--color-smoke)]">
+                  Trackable Requirements (earn points)
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setFormRequirements([...formRequirements, { title: "", description: "", points: 1 }])}
+                  className="rounded-full bg-[var(--color-coral)]/15 px-3 py-1 font-[family-name:var(--font-mono)] text-[10px] text-[var(--color-coral)] hover:bg-[var(--color-coral)]/25"
+                >
+                  + Add Requirement
+                </button>
+              </div>
+              {formRequirements.map((req, i) => (
+                <div key={i} className="mb-3 flex gap-2 rounded-lg border border-[var(--color-ash)] bg-[var(--color-black)] p-3">
+                  <div className="flex-1 space-y-2">
+                    <input
+                      value={req.title}
+                      onChange={(e) => {
+                        const updated = [...formRequirements];
+                        updated[i].title = e.target.value;
+                        setFormRequirements(updated);
+                      }}
+                      placeholder="Requirement title *"
+                      className="w-full bg-transparent font-[family-name:var(--font-mono)] text-sm text-[var(--color-white)] outline-none placeholder:text-[var(--color-smoke)]"
+                    />
+                    <input
+                      value={req.description}
+                      onChange={(e) => {
+                        const updated = [...formRequirements];
+                        updated[i].description = e.target.value;
+                        setFormRequirements(updated);
+                      }}
+                      placeholder="Description (optional)"
+                      className="w-full bg-transparent font-[family-name:var(--font-mono)] text-xs text-[var(--color-mist)] outline-none placeholder:text-[var(--color-smoke)]"
+                    />
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <input
+                      type="number"
+                      min="1"
+                      max="50"
+                      value={req.points}
+                      onChange={(e) => {
+                        const updated = [...formRequirements];
+                        updated[i].points = parseInt(e.target.value) || 1;
+                        setFormRequirements(updated);
+                      }}
+                      className="w-14 rounded-lg border border-[var(--color-ash)] bg-[var(--color-dark)] px-2 py-1 text-center font-[family-name:var(--font-mono)] text-xs text-[var(--color-lime)] outline-none"
+                    />
+                    <span className="font-[family-name:var(--font-mono)] text-[9px] text-[var(--color-smoke)]">pts</span>
+                    <button
+                      type="button"
+                      onClick={() => setFormRequirements(formRequirements.filter((_, j) => j !== i))}
+                      className="font-[family-name:var(--font-mono)] text-xs text-red-400 hover:text-red-300"
+                    >
+                      ×
+                    </button>
+                  </div>
+                </div>
+              ))}
+              {formRequirements.length === 0 && (
+                <p className="font-[family-name:var(--font-mono)] text-[10px] text-[var(--color-smoke)]">
+                  No requirements yet. Add trackable tasks that earn points when completed.
+                </p>
+              )}
             </div>
 
             <button

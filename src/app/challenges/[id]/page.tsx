@@ -1,7 +1,8 @@
 import Link from "next/link";
 import Image from "next/image";
 import { createServerSupabaseClient, getSupabaseAdmin } from "@/lib/supabase-server";
-import { getChallengeWithSubmissions, getSubmissionCount, getAcceptanceCount } from "@/app/actions/challenges";
+import { getChallengeWithSubmissions, getSubmissionCount, getAcceptanceCount, getChallengeRequirements } from "@/app/actions/challenges";
+import ChallengeRequirements from "./ChallengeRequirements";
 import ChallengeSubmitForm from "./ChallengeSubmitForm";
 import ChallengeAcceptButton from "./ChallengeAcceptButton";
 
@@ -65,9 +66,10 @@ export default async function ChallengeDetailPage({
     );
   }
 
-  const [count, acceptCount] = await Promise.all([
+  const [count, acceptCount, requirements] = await Promise.all([
     getSubmissionCount(id),
     getAcceptanceCount(id),
+    getChallengeRequirements(id),
   ]);
   const deadline = deadlineStatus(challenge.submission_deadline);
   const isActive = challenge.status === "active";
@@ -178,15 +180,15 @@ export default async function ChallengeDetailPage({
             </div>
           )}
 
-          {/* Social tags */}
-          {(challenge.hashtag || challenge.instagram_handle) && (
+          {/* Social tags (respects show_hashtag / show_instagram toggles) */}
+          {((challenge.hashtag && challenge.show_hashtag !== false) || (challenge.instagram_handle && challenge.show_instagram !== false)) && (
             <div className="mt-4 flex flex-wrap gap-3">
-              {challenge.hashtag && (
+              {challenge.hashtag && challenge.show_hashtag !== false && (
                 <span className="rounded-full bg-[var(--color-violet)]/10 px-3 py-1 font-[family-name:var(--font-mono)] text-xs text-[var(--color-violet)]">
                   {challenge.hashtag}
                 </span>
               )}
-              {challenge.instagram_handle && (
+              {challenge.instagram_handle && challenge.show_instagram !== false && (
                 <a
                   href={`https://instagram.com/${challenge.instagram_handle.replace("@", "")}`}
                   target="_blank"
@@ -215,6 +217,11 @@ export default async function ChallengeDetailPage({
               {challenge.rules}
             </div>
           </div>
+        )}
+
+        {/* Trackable Requirements */}
+        {requirements.length > 0 && (
+          <ChallengeRequirements challengeId={id} requirements={requirements} />
         )}
 
         {/* Accept + Submit */}

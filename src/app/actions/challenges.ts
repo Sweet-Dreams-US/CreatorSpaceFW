@@ -16,6 +16,9 @@ interface ChallengeData {
   rules?: string;
   hashtag?: string;
   instagram_handle?: string;
+  show_hashtag?: boolean;
+  show_instagram?: boolean;
+  requirements?: { title: string; description?: string; points: number }[];
 }
 
 export async function createChallenge(data: ChallengeData) {
@@ -25,7 +28,7 @@ export async function createChallenge(data: ChallengeData) {
   } = await supabase.auth.getUser();
   if (!user || !isAdmin(user.email)) return { error: "Not authorized" };
 
-  const { error } = await getSupabaseAdmin().from("challenges").insert({
+  const { error, data: newChallenge } = await getSupabaseAdmin().from("challenges").insert({
     title: data.title,
     description: data.description || null,
     month: data.month,
@@ -36,10 +39,25 @@ export async function createChallenge(data: ChallengeData) {
     rules: data.rules || null,
     hashtag: data.hashtag || null,
     instagram_handle: data.instagram_handle || null,
+    show_hashtag: data.show_hashtag ?? true,
+    show_instagram: data.show_instagram ?? true,
     created_by: user.id,
-  });
+  }).select("id").single();
 
   if (error) return { error: error.message };
+
+  // Insert requirements if provided
+  if (data.requirements && data.requirements.length > 0 && newChallenge?.id) {
+    const reqs = data.requirements.map((r, i) => ({
+      challenge_id: newChallenge.id,
+      title: r.title,
+      description: r.description || null,
+      points: r.points || 1,
+      sort_order: i,
+    }));
+    await getSupabaseAdmin().from("challenge_requirements").insert(reqs);
+  }
+
   revalidatePath("/challenges");
   return { success: true };
 }
@@ -257,4 +275,121 @@ export async function getSubmissionCountsBatch(challengeIds: string[]) {
     counts[row.challenge_id] = (counts[row.challenge_id] || 0) + 1;
   }
   return counts;
+}
+
+// --- Challenge Requirements ---
+
+export async function getChallengeRequirements(challengeId: string) {
+  const { data } = await getSupabaseAdmin()
+    .from("challenge_requirements")
+    .select("*")
+    .eq("challenge_id", challengeId)
+    .order("sort_order", { ascending: true });
+  return data || [];
+}
+
+export async function completeRequirement(requirementId: string) {
+  const supabase = await createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const { data: creator } = await getSupabaseAdmin()
+    .from("creators")
+    .select("id")
+    .eq("auth_id", user.id)
+    .single();
+  if (!creator) return { error: "Creator not found" };
+
+  // Get the requirement to know points value
+  const { data: req } = await getSupabaseAdmin()
+    .from("challenge_requirements")
+    .select("id, points, challenge_id")
+    .eq("id", requirementId)
+    .single();
+  if (!req) return { error: "Requirement not found" };
+
+  const { error } = await getSupabaseAdmin()
+    .from("challenge_requirement_completions")
+    .insert({ requirement_id: requirementId, creator_id: creator.id });
+
+  if (error) {
+    if (error.code === "23505") return { error: "Already completed" };
+    return { error: error.message };
+  }
+
+  // Award points (use requirement's own value)
+  await awardPoints(creator.id, "challenge_requirement", requirementId, req.points);
+
+  revalidatePath(`/challenges/${req.challenge_id}`);
+  return { success: true };
+}
+
+export async function getMyCompletions(challengeId: string) {
+  const supabase = await createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data: creator } = await getSupabaseAdmin()
+    .from("creators")
+    .select("id")
+    .eq("auth_id", user.id)
+    .single();
+  if (!creator) return [];
+
+  const { data: reqs } = await getSupabaseAdmin()
+    .from("challenge_requirements")
+    .select("id")
+    .eq("challenge_id", challengeId);
+
+  if (!reqs || reqs.length === 0) return [];
+
+  const { data } = await getSupabaseAdmin()
+    .from("challenge_requirement_completions")
+    .select("requirement_id")
+    .eq("creator_id", creator.id)
+    .in("requirement_id", reqs.map((r) => r.id));
+
+  return (data || []).map((d) => d.requirement_id);
+}
+
+export async function getChallengeLeaderboard(challengeId: string) {
+  // Get all requirements for this challenge
+  const { data: reqs } = await getSupabaseAdmin()
+    .from("challenge_requirements")
+    .select("id, points")
+    .eq("challenge_id", challengeId);
+
+  if (!reqs || reqs.length === 0) return [];
+
+  // Get all completions
+  const { data: completions } = await getSupabaseAdmin()
+    .from("challenge_requirement_completions")
+    .select("requirement_id, creator_id")
+    .in("requirement_id", reqs.map((r) => r.id));
+
+  if (!completions || completions.length === 0) return [];
+
+  // Build points map
+  const reqPoints: Record<string, number> = {};
+  for (const r of reqs) reqPoints[r.id] = r.points;
+
+  const creatorPoints: Record<string, number> = {};
+  const creatorCompleted: Record<string, number> = {};
+  for (const c of completions) {
+    creatorPoints[c.creator_id] = (creatorPoints[c.creator_id] || 0) + (reqPoints[c.requirement_id] || 0);
+    creatorCompleted[c.creator_id] = (creatorCompleted[c.creator_id] || 0) + 1;
+  }
+
+  const creatorIds = Object.keys(creatorPoints);
+  const { data: creators } = await getSupabaseAdmin()
+    .from("creators")
+    .select("id, first_name, last_name, avatar_url, slug")
+    .in("id", creatorIds);
+
+  return (creators || []).map((c) => ({
+    ...c,
+    points: creatorPoints[c.id] || 0,
+    completed: creatorCompleted[c.id] || 0,
+    total: reqs.length,
+  })).sort((a, b) => b.points - a.points);
 }
