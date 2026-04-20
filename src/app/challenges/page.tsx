@@ -270,19 +270,18 @@ export default function ChallengesPage() {
               {/* Submit button */}
               <div className="mt-6 border-t border-white/5 pt-6">
                 {user ? (
-                  <button
-                    onClick={() => setShowModal(true)}
-                    disabled={countdown.expired && !!current.submission_deadline}
-                    className="rounded-full border border-[var(--color-coral)] px-5 py-2 font-[family-name:var(--font-mono)] text-xs text-[var(--color-coral)] transition-all hover:bg-[var(--color-coral)] hover:text-[var(--color-black)] disabled:cursor-not-allowed disabled:opacity-40"
+                  <Link
+                    href={`/challenges/${current.id}`}
+                    className="rounded-full bg-[var(--color-coral)] px-5 py-2 font-[family-name:var(--font-mono)] text-xs font-semibold text-[var(--color-black)] transition-all hover:shadow-[0_0_20px_rgba(250,146,119,0.3)]"
                   >
-                    Submit Your Work
-                  </button>
+                    View Challenge
+                  </Link>
                 ) : (
                   <Link
-                    href="/auth/login"
+                    href={`/challenges/${current.id}`}
                     className="inline-flex rounded-full border border-[var(--color-coral)] px-5 py-2 font-[family-name:var(--font-mono)] text-xs text-[var(--color-coral)] transition-all hover:bg-[var(--color-coral)] hover:text-[var(--color-black)]"
                   >
-                    Sign in to Submit
+                    View Challenge
                   </Link>
                 )}
               </div>

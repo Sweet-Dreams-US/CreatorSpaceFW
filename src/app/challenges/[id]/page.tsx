@@ -226,7 +226,7 @@ export default async function ChallengeDetailPage({
 
         {/* Accept + Submit */}
         {isActive && (
-          <ChallengeAcceptButton challengeId={id} canSubmit={canSubmit} />
+          <ChallengeAcceptButton challengeId={id} canSubmit={canSubmit} hasRequirements={requirements.length > 0} />
         )}
 
         {/* Submissions Gallery — only visible after user submits their own (or challenge is completed) */}

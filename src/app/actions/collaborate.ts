@@ -47,6 +47,13 @@ export async function createCollabPost(data: CollabPostData) {
 
   if (error) return { error: error.message };
   await awardPoints(creator.id, "collab_post");
+
+  // Check challenge auto-requirements
+  try {
+    const { checkAutoRequirements } = await import("./challenges");
+    await checkAutoRequirements(creator.id);
+  } catch { /* non-blocking */ }
+
   revalidatePath("/collaborate");
   return { success: true };
 }
@@ -142,6 +149,12 @@ export async function respondToCollabPost(postId: string, message: string) {
   }
 
   await awardPoints(creator.id, "collab_response");
+
+  // Check challenge auto-requirements
+  try {
+    const { checkAutoRequirements } = await import("./challenges");
+    await checkAutoRequirements(creator.id);
+  } catch { /* non-blocking */ }
 
   // In-app notification to post author
   try {

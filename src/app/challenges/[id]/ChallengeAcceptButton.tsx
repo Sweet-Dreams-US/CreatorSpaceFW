@@ -9,9 +9,10 @@ import ChallengeSubmitForm from "./ChallengeSubmitForm";
 interface Props {
   challengeId: string;
   canSubmit: boolean;
+  hasRequirements?: boolean;
 }
 
-export default function ChallengeAcceptButton({ challengeId, canSubmit }: Props) {
+export default function ChallengeAcceptButton({ challengeId, canSubmit, hasRequirements }: Props) {
   const { user, loading } = useAuth();
   const [accepted, setAccepted] = useState(false);
   const [checking, setChecking] = useState(true);
@@ -67,8 +68,18 @@ export default function ChallengeAcceptButton({ challengeId, canSubmit }: Props)
     );
   }
 
-  // Accepted — show submit form if still open
+  // Accepted — if challenge has trackable requirements, show message (requirements are above)
+  // If no requirements, show submit form
   if (canSubmit) {
+    if (hasRequirements) {
+      return (
+        <div className="mt-6 rounded-xl border border-[var(--color-lime)]/20 bg-[var(--color-lime)]/5 p-6 text-center">
+          <p className="font-[family-name:var(--font-mono)] text-sm text-[var(--color-lime)]">
+            Challenge accepted! Complete the requirements above to earn points.
+          </p>
+        </div>
+      );
+    }
     return <ChallengeSubmitForm challengeId={challengeId} />;
   }
 

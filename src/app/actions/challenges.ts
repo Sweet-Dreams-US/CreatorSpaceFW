@@ -250,6 +250,11 @@ export async function acceptChallenge(challengeId: string) {
     return { error: error.message };
   }
 
+  // Auto-check requirements (including "challenge_accept" type)
+  try {
+    await checkAutoRequirements(creator.id);
+  } catch { /* non-blocking */ }
+
   revalidatePath(`/challenges/${challengeId}`);
   return { success: true };
 }
