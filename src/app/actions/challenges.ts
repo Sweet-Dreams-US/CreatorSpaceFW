@@ -328,7 +328,25 @@ export async function getSubmissionCountsBatch(challengeIds: string[]) {
 
 // --- Auto-tracking for challenge requirements ---
 
-export async function checkAutoRequirements(creatorId: string) {
+export async function checkAutoRequirements(passedCreatorId?: string) {
+  let creatorId = passedCreatorId;
+
+  // If no creatorId passed, get from session
+  if (!creatorId) {
+    const supabase = await createServerSupabaseClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const { data: creator } = await getSupabaseAdmin()
+      .from("creators")
+      .select("id")
+      .eq("auth_id", user.id)
+      .single();
+    if (!creator) return;
+    creatorId = creator.id;
+  }
+
+  if (!creatorId) return;
+
   // Get all active challenges
   const { data: activeChallenges } = await getSupabaseAdmin()
     .from("challenges")
