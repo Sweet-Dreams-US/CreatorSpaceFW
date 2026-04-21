@@ -67,6 +67,7 @@ export async function updateProfile(formData: FormData) {
     website: (formData.get("website") as string)?.trim() || null,
     bio: (formData.get("bio") as string)?.trim() || null,
     skills: (formData.get("skills") as string)?.trim() || "",
+    location: (formData.get("location") as string)?.trim() || null,
     updated_at: new Date().toISOString(),
   };
 
@@ -118,6 +119,7 @@ export async function adminUpdateProfile(creatorId: string, formData: FormData) 
       website: (formData.get("website") as string)?.trim() || null,
       bio: (formData.get("bio") as string)?.trim() || null,
       skills: (formData.get("skills") as string)?.trim() || "",
+      location: (formData.get("location") as string)?.trim() || null,
       updated_at: new Date().toISOString(),
     })
     .eq("id", creatorId);
