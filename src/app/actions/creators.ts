@@ -18,9 +18,18 @@ interface JoinFormData {
 export async function getPublicCreators() {
   const { data } = await getSupabaseAdmin()
     .from("creators")
-    .select("id, first_name, last_name, company, job_title, skills, slug, avatar_url, badges")
+    .select("id, first_name, last_name, company, job_title, skills, slug, avatar_url, badges, claimed, bio")
+    .order("claimed", { ascending: false })
     .order("created_at", { ascending: false });
-  return data || [];
+
+  if (!data) return [];
+
+  // Sort: claimed with avatar+bio first, then claimed without, then unclaimed
+  return data.sort((a, b) => {
+    const scoreA = (a.claimed ? 100 : 0) + (a.avatar_url ? 10 : 0) + (a.bio ? 5 : 0) + (a.company ? 2 : 0);
+    const scoreB = (b.claimed ? 100 : 0) + (b.avatar_url ? 10 : 0) + (b.bio ? 5 : 0) + (b.company ? 2 : 0);
+    return scoreB - scoreA;
+  });
 }
 
 export async function joinCreatorDatabase(data: JoinFormData) {
