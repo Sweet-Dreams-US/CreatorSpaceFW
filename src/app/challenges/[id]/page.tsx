@@ -202,7 +202,9 @@ export default async function ChallengeDetailPage({
           )}
 
           <div className="mt-5 flex items-center gap-4 font-[family-name:var(--font-mono)] text-xs text-[var(--color-smoke)]">
-            <span>{count} submission{count !== 1 ? "s" : ""}</span>
+            {requirements.length === 0 && (
+              <span>{count} submission{count !== 1 ? "s" : ""}</span>
+            )}
             <span>{acceptCount} accepted</span>
           </div>
         </div>
@@ -324,7 +326,7 @@ export default async function ChallengeDetailPage({
           </section>
         )}
 
-        {challenge.submissions && challenge.submissions.length === 0 && (
+        {requirements.length === 0 && challenge.submissions && challenge.submissions.length === 0 && (
           <div className="mt-10 rounded-xl border border-white/5 bg-[var(--color-dark)] p-10 text-center">
             <p className="font-[family-name:var(--font-mono)] text-sm text-[var(--color-smoke)]">
               No submissions yet. Be the first!
