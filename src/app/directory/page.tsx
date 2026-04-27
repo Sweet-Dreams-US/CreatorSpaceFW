@@ -52,6 +52,8 @@ interface Creator {
   slug: string | null;
   avatar_url: string | null;
   badges: string[] | null;
+  claimed: boolean;
+  bio: string | null;
 }
 
 export default function DirectoryPage() {
@@ -96,19 +98,25 @@ export default function DirectoryPage() {
     return ["All", ...rest];
   }, [creators]);
 
-  const filtered = creators.filter((c) => {
-    const matchesFilter =
-      filter === "All" ||
-      c.skills.toLowerCase().includes(filter.toLowerCase());
+  const filtered = creators
+    .filter((c) => {
+      const matchesFilter =
+        filter === "All" ||
+        c.skills.toLowerCase().includes(filter.toLowerCase());
 
-    const matchesSearch =
-      !search ||
-      `${c.first_name} ${c.last_name} ${c.company || ""} ${c.job_title || ""} ${c.skills}`
-        .toLowerCase()
-        .includes(search.toLowerCase());
+      const matchesSearch =
+        !search ||
+        `${c.first_name} ${c.last_name} ${c.company || ""} ${c.job_title || ""} ${c.skills}`
+          .toLowerCase()
+          .includes(search.toLowerCase());
 
-    return matchesFilter && matchesSearch;
-  });
+      return matchesFilter && matchesSearch;
+    })
+    // Claimed creators always sort first (visual encouragement to sign up)
+    .sort((a, b) => {
+      if (a.claimed === b.claimed) return 0;
+      return a.claimed ? -1 : 1;
+    });
 
   return (
     <main className="min-h-screen bg-[var(--color-black)] px-6 py-16">
@@ -232,7 +240,11 @@ function CreatorCard({
   const initials = `${creator.first_name?.[0] || ""}${creator.last_name?.[0] || ""}`.toUpperCase();
 
   const card = (
-    <div className="group relative rounded-xl border border-white/5 bg-[var(--color-dark)] p-5 transition-all duration-300 hover:scale-[1.02] hover:border-[var(--color-coral)] hover:shadow-[0_0_24px_rgba(250,146,119,0.12)]">
+    <div className={`group relative rounded-xl border bg-[var(--color-dark)] p-5 transition-all duration-300 hover:scale-[1.02] hover:border-[var(--color-coral)] hover:shadow-[0_0_24px_rgba(250,146,119,0.12)] ${
+      creator.claimed
+        ? "border-white/5"
+        : "border-white/5 opacity-60 hover:opacity-100"
+    }`}>
       {showEdit && (
         <Link
           href={`/profile/edit/${creator.id}`}
