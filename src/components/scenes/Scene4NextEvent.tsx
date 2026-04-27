@@ -7,16 +7,6 @@ import { rsvpToEvent, checkRsvp, getWaitlistPosition } from "@/app/actions/rsvp"
 import { getEventAttendees, getEventConfirmedCount } from "@/app/actions/events";
 import Link from "next/link";
 
-// Fallback event if no DB event is found
-const FALLBACK_EVENT = {
-  id: "2026-04",
-  title: "3 YEAR BASH",
-  date: "APRIL 11TH",
-  time: "TBD",
-  venue: "THE VENUE @ CHARLIE'S PLACE",
-  facebookUrl: "https://www.facebook.com/CreatorSpaceFW/events" as string | null,
-};
-
 interface EventFromDB {
   id: string;
   title: string;
@@ -72,7 +62,62 @@ const CONFETTI = Array.from({ length: 30 }, () => ({
 }));
 
 export default function Scene4NextEvent({ dbEvent }: { dbEvent?: EventFromDB | null }) {
-  const event = dbEvent ? formatEventFromDB(dbEvent) : FALLBACK_EVENT;
+  // No upcoming event — render "stay tuned" empty state
+  if (!dbEvent) {
+    return (
+      <section
+        id="scene-event"
+        className="relative flex min-h-[60vh] items-center justify-center overflow-hidden bg-[var(--color-coral)] py-20"
+      >
+        {/* Confetti backdrop (subtle) */}
+        <div className="pointer-events-none absolute inset-0 opacity-30">
+          {CONFETTI.map((c, i) => (
+            <span
+              key={i}
+              className="absolute rounded-sm"
+              style={{
+                left: `${c.left}%`,
+                top: `${c.top}%`,
+                width: c.size,
+                height: c.size,
+                backgroundColor: c.color,
+                transform: `rotate(${c.rotation}deg)`,
+                opacity: 0.5,
+              }}
+            />
+          ))}
+        </div>
+
+        <div className="relative z-10 mx-auto max-w-2xl px-6 text-center">
+          <p className="font-[family-name:var(--font-mono)] text-xs uppercase tracking-[6px] text-[var(--color-black)]/70">
+            That&apos;s a wrap
+          </p>
+          <h2 className="mt-4 font-[family-name:var(--font-display)] text-5xl leading-none tracking-tight text-[var(--color-black)] sm:text-7xl">
+            EVENT&apos;S OVER
+          </h2>
+          <p className="mt-6 font-[family-name:var(--font-mono)] text-base text-[var(--color-black)]/80 sm:text-lg">
+            Next event to be announced soon. Stay tuned.
+          </p>
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+            <Link
+              href="/directory"
+              className="rounded-full border-2 border-[var(--color-black)] px-6 py-3 font-[family-name:var(--font-mono)] text-xs font-semibold uppercase tracking-widest text-[var(--color-black)] transition-all hover:bg-[var(--color-black)] hover:text-[var(--color-coral)]"
+            >
+              Browse the Directory
+            </Link>
+            <Link
+              href="/collaborate"
+              className="rounded-full border-2 border-[var(--color-black)] px-6 py-3 font-[family-name:var(--font-mono)] text-xs font-semibold uppercase tracking-widest text-[var(--color-black)] transition-all hover:bg-[var(--color-black)] hover:text-[var(--color-coral)]"
+            >
+              Collaborate
+            </Link>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  const event = formatEventFromDB(dbEvent);
 
   const sectionRef = useRef<HTMLDivElement>(null);
   const leftCurtain = useRef<HTMLDivElement>(null);
