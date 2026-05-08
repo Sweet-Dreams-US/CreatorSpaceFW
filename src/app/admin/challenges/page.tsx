@@ -46,7 +46,13 @@ export default function AdminChallengesPage() {
   const [formInstagram, setFormInstagram] = useState("");
   const [formShowHashtag, setFormShowHashtag] = useState(true);
   const [formShowInstagram, setFormShowInstagram] = useState(true);
-  const [formRequirements, setFormRequirements] = useState<{ title: string; description: string; points: number }[]>([]);
+  const [formRequirements, setFormRequirements] = useState<{
+    title: string;
+    description: string;
+    points: number;
+    auto_type: string;
+    auto_threshold: number;
+  }[]>([]);
   const [creating, setCreating] = useState(false);
 
   const load = useCallback(async () => {
@@ -82,7 +88,15 @@ export default function AdminChallengesPage() {
       instagram_handle: formInstagram || undefined,
       show_hashtag: formShowHashtag,
       show_instagram: formShowInstagram,
-      requirements: formRequirements.filter((r) => r.title.trim()),
+      requirements: formRequirements
+        .filter((r) => r.title.trim())
+        .map((r) => ({
+          title: r.title,
+          description: r.description || undefined,
+          points: r.points,
+          auto_type: r.auto_type || undefined,
+          auto_threshold: r.auto_threshold || 1,
+        })),
     });
     if (result.error) {
       setMessage(`Error: ${result.error}`);
@@ -315,7 +329,7 @@ export default function AdminChallengesPage() {
                 </label>
                 <button
                   type="button"
-                  onClick={() => setFormRequirements([...formRequirements, { title: "", description: "", points: 1 }])}
+                  onClick={() => setFormRequirements([...formRequirements, { title: "", description: "", points: 1, auto_type: "", auto_threshold: 1 }])}
                   className="rounded-full bg-[var(--color-coral)]/15 px-3 py-1 font-[family-name:var(--font-mono)] text-[10px] text-[var(--color-coral)] hover:bg-[var(--color-coral)]/25"
                 >
                   + Add Requirement
@@ -344,6 +358,42 @@ export default function AdminChallengesPage() {
                       placeholder="Description (optional)"
                       className="w-full bg-transparent font-[family-name:var(--font-mono)] text-xs text-[var(--color-mist)] outline-none placeholder:text-[var(--color-smoke)]"
                     />
+                    <div className="flex flex-wrap items-center gap-2 pt-1">
+                      <select
+                        value={req.auto_type}
+                        onChange={(e) => {
+                          const updated = [...formRequirements];
+                          updated[i].auto_type = e.target.value;
+                          setFormRequirements(updated);
+                        }}
+                        className="rounded-md border border-[var(--color-ash)] bg-[var(--color-dark)] px-2 py-1 font-[family-name:var(--font-mono)] text-[10px] text-[var(--color-mist)] outline-none"
+                      >
+                        <option value="">Manual (admin marks complete)</option>
+                        <option value="challenge_accept">Auto: Accept the challenge</option>
+                        <option value="challenge_submission">Auto: Submit creative work</option>
+                        <option value="collab_post">Auto: Post on Collab board</option>
+                        <option value="collab_post_positions">Auto: Collab post w/ N+ positions</option>
+                        <option value="collab_post_scope">Auto: Collab post w/ scope</option>
+                        <option value="collab_responses">Auto: Respond to N+ collab posts</option>
+                      </select>
+                      {(req.auto_type === "collab_post_positions" || req.auto_type === "collab_responses") && (
+                        <div className="flex items-center gap-1">
+                          <span className="font-[family-name:var(--font-mono)] text-[9px] text-[var(--color-smoke)]">N=</span>
+                          <input
+                            type="number"
+                            min="1"
+                            max="20"
+                            value={req.auto_threshold}
+                            onChange={(e) => {
+                              const updated = [...formRequirements];
+                              updated[i].auto_threshold = parseInt(e.target.value) || 1;
+                              setFormRequirements(updated);
+                            }}
+                            className="w-12 rounded-md border border-[var(--color-ash)] bg-[var(--color-dark)] px-1.5 py-1 text-center font-[family-name:var(--font-mono)] text-[10px] text-[var(--color-mist)] outline-none"
+                          />
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
                     <input

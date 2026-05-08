@@ -213,6 +213,12 @@ export async function submitToChallenge(
   }
 
   await awardPoints(creator.id, "challenge_submission");
+
+  // Auto-check requirements (challenge_submission auto_type completes here)
+  try {
+    await checkAutoRequirements(creator.id);
+  } catch { /* non-blocking */ }
+
   revalidatePath(`/challenges/${challengeId}`);
   return { success: true };
 }
@@ -449,6 +455,16 @@ export async function checkAutoRequirements(passedCreatorId?: string) {
         }
         case "challenge_accept": {
           met = true; // Already checked above
+          break;
+        }
+        case "challenge_submission": {
+          // User has submitted to THIS challenge
+          const { count } = await getSupabaseAdmin()
+            .from("challenge_submissions")
+            .select("id", { count: "exact", head: true })
+            .eq("challenge_id", challenge.id)
+            .eq("creator_id", creatorId);
+          met = (count || 0) >= 1;
           break;
         }
       }
