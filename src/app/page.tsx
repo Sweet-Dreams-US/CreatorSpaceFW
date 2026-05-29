@@ -12,7 +12,7 @@ import SceneSpotlight from "@/components/scenes/SceneSpotlight";
 import CommandPalette from "@/components/ui/CommandPalette";
 import FloatingNav from "@/components/ui/FloatingNav";
 import MobileNav from "@/components/ui/MobileNav";
-import { createClient } from "@/lib/supabase";
+import { getNextEvent } from "@/app/actions/events";
 
 export default function Home() {
   const [nextEvent, setNextEvent] = useState<{
@@ -26,15 +26,21 @@ export default function Home() {
 
   useEffect(() => {
     async function fetchNextEvent() {
-      const supabase = createClient();
-      const { data } = await supabase
-        .from("events")
-        .select("id, title, date, location, facebook_url, max_capacity")
-        .gte("date", new Date().toISOString())
-        .order("date", { ascending: true })
-        .limit(1)
-        .single();
-      if (data) setNextEvent(data);
+      try {
+        const data = await getNextEvent();
+        if (data) {
+          setNextEvent({
+            id: data.id,
+            title: data.title,
+            date: data.date,
+            location: data.location,
+            facebook_url: data.facebook_url,
+            max_capacity: data.max_capacity,
+          });
+        }
+      } catch {
+        // No upcoming event — Scene4NextEvent renders the "Event's Over" state
+      }
     }
     fetchNextEvent();
   }, []);
