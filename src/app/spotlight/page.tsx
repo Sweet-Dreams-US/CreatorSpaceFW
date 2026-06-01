@@ -13,13 +13,11 @@ export default async function SpotlightPage() {
   const current = await getCurrentSpotlight();
   const pastRaw = await getPastSpotlights();
 
-  // Filter out current month from past spotlights
-  const now = new Date();
-  const currentMonth = now.getMonth() + 1;
-  const currentYear = now.getFullYear();
+  // Filter out the active "current" spotlight by its ID
+  // (avoids fragile month/year guessing — current is whatever was most recently featured)
+  const currentId = (current as { id?: string } | null)?.id;
   const past = pastRaw.filter(
-    (s: { month: number; year: number }) =>
-      !(s.month === currentMonth && s.year === currentYear)
+    (s: { id: string }) => s.id !== currentId
   );
 
   return (
@@ -49,7 +47,7 @@ export default async function SpotlightPage() {
           <div className="flex items-center gap-3">
             <div className="h-px flex-1 bg-gradient-to-r from-[var(--color-coral)]/40 to-transparent" />
             <span className="font-[family-name:var(--font-mono)] text-xs uppercase tracking-widest text-[var(--color-coral)]">
-              {MONTH_NAMES[currentMonth - 1]} {currentYear}
+              {current?.month ? `${MONTH_NAMES[current.month - 1]} ${current.year}` : "Featured Creator"}
             </span>
             <div className="h-px flex-1 bg-gradient-to-l from-[var(--color-coral)]/40 to-transparent" />
           </div>
