@@ -215,11 +215,14 @@ const ACTION_LABELS: Record<string, string> = {
 };
 
 export async function getCurrentSpotlight() {
-  // Show whoever was most recently featured — admin control over "current" spotlight
-  // No more strict month/year matching that hid newly-set spotlights
+  // Show the spotlight for the latest (year, month) combination.
+  // Picking month=6 wins over month=5 regardless of which was edited last.
+  // Tiebreaker on featured_at handles the rare same-month-and-year case.
   const { data } = await getSupabaseAdmin()
     .from("spotlights")
     .select("*, creators:creator_id(id, first_name, last_name, avatar_url, slug, bio, skills, company, job_title)")
+    .order("year", { ascending: false })
+    .order("month", { ascending: false })
     .order("featured_at", { ascending: false, nullsFirst: false })
     .limit(1)
     .maybeSingle();
