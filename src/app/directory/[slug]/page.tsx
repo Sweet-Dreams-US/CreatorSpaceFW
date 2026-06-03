@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { createServerSupabaseClient, getSupabaseAdmin } from "@/lib/supabase-server";
 import { isAdmin } from "@/lib/admin";
@@ -100,7 +100,20 @@ export default async function CreatorProfilePage({ params }: PageProps) {
     .eq("slug", slug)
     .single();
 
+  // If no creator matches this slug, check if it's an old slug that was renamed
   if (!creator) {
+    const { data: renamed } = await getSupabaseAdmin()
+      .from("creators")
+      .select("slug")
+      .contains("previous_slugs", [slug])
+      .limit(1)
+      .maybeSingle();
+
+    if (renamed?.slug) {
+      // Old URL → new URL (Next.js issues a 307 redirect)
+      redirect(`/directory/${renamed.slug}`);
+    }
+
     notFound();
   }
 
