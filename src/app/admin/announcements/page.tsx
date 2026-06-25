@@ -224,7 +224,14 @@ export default function AdminAnnouncementsPage() {
           </h2>
           <div className="mt-4 space-y-2">
             {history.map((h) => {
-              const p = h.progress || { sent: h.sent_to, pending: 0, failed: 0, total: h.sent_to };
+              // Legacy fallback: announcements sent before the recipients-tracking
+              // migration have no rows in announcement_recipients, so progress.total
+              // is 0. Fall back to the historical sent_to count so the row reads
+              // correctly instead of showing "0/0 sent".
+              const hasRecipientRows = (h.progress?.total ?? 0) > 0;
+              const p = hasRecipientRows
+                ? h.progress!
+                : { sent: h.sent_to, pending: 0, failed: 0, total: h.sent_to };
               const pct = p.total > 0 ? Math.round((p.sent / p.total) * 100) : 0;
               const hasPending = p.pending > 0;
               return (
