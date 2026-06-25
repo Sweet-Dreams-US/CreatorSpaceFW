@@ -19,8 +19,15 @@ export default function AdminAnnouncementsPage() {
   const [sending, setSending] = useState(false);
   const [message, setMessage] = useState("");
   const [history, setHistory] = useState<
-    Array<{ id: string; subject: string; sent_to: number; created_at: string }>
+    Array<{
+      id: string;
+      subject: string;
+      sent_to: number;
+      created_at: string;
+      progress?: { sent: number; pending: number; failed: number; total: number };
+    }>
   >([]);
+  const [continuingId, setContinuingId] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     const data = await getAllCreatorsAdmin();
@@ -72,11 +79,13 @@ export default function AdminAnnouncementsPage() {
       });
       const data = await res.json();
       if (data.success) {
-        const msg = data.failed > 0
-          ? `Sent to ${data.sent}/${data.totalRecipients}, failed ${data.failed}. Error: ${data.firstError || "unknown"}`
-          : `Announcement sent to ${data.sent} creator(s)!`;
-        setMessage(msg);
-        if (data.sent > 0) {
+        const { batchSent, batchFailed, totalRecipients, progress, firstError } = data;
+        const remaining = progress?.pending ?? 0;
+        const parts = [`Sent ${batchSent}/${totalRecipients} in this batch.`];
+        if (remaining > 0) parts.push(`${remaining} still pending — use "Continue sending" below.`);
+        if (batchFailed > 0) parts.push(`${batchFailed} failed${firstError ? `: ${firstError}` : ""}.`);
+        setMessage(parts.join(" "));
+        if (batchSent > 0) {
           setSubject("");
           setBody("");
         }
@@ -214,22 +223,73 @@ export default function AdminAnnouncementsPage() {
             SEND HISTORY
           </h2>
           <div className="mt-4 space-y-2">
-            {history.map((h) => (
-              <div
-                key={h.id}
-                className="flex items-center justify-between rounded-lg border border-[var(--color-ash)] bg-[var(--color-dark)] px-5 py-3"
-              >
-                <div>
-                  <p className="font-[family-name:var(--font-mono)] text-sm text-[var(--color-white)]">
-                    {h.subject}
-                  </p>
-                  <p className="font-[family-name:var(--font-mono)] text-xs text-[var(--color-smoke)]">
-                    Sent to {h.sent_to} creators —{" "}
-                    {new Date(h.created_at).toLocaleDateString()}
-                  </p>
+            {history.map((h) => {
+              const p = h.progress || { sent: h.sent_to, pending: 0, failed: 0, total: h.sent_to };
+              const pct = p.total > 0 ? Math.round((p.sent / p.total) * 100) : 0;
+              const hasPending = p.pending > 0;
+              return (
+                <div
+                  key={h.id}
+                  className="rounded-lg border border-[var(--color-ash)] bg-[var(--color-dark)] px-5 py-4"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-[family-name:var(--font-mono)] text-sm text-[var(--color-white)]">
+                        {h.subject}
+                      </p>
+                      <p className="font-[family-name:var(--font-mono)] text-xs text-[var(--color-smoke)]">
+                        {new Date(h.created_at).toLocaleString()}
+                      </p>
+                    </div>
+                    {hasPending && (
+                      <button
+                        onClick={async () => {
+                          setContinuingId(h.id);
+                          try {
+                            const res = await fetch(`/api/admin/announcements/${h.id}/send-batch`, { method: "POST" });
+                            const data = await res.json();
+                            if (data.success) {
+                              const remaining = data.progress?.pending ?? 0;
+                              const parts = [`Sent ${data.batchSent} more.`];
+                              if (remaining > 0) parts.push(`${remaining} still pending.`);
+                              if (data.batchFailed > 0) parts.push(`${data.batchFailed} failed${data.firstError ? `: ${data.firstError}` : ""}.`);
+                              setMessage(parts.join(" "));
+                              loadData();
+                            } else {
+                              setMessage(`Failed: ${data.error}`);
+                            }
+                          } catch {
+                            setMessage("Network error.");
+                          }
+                          setContinuingId(null);
+                        }}
+                        disabled={continuingId === h.id}
+                        className="shrink-0 rounded-full bg-[var(--color-coral)] px-4 py-2 font-[family-name:var(--font-mono)] text-xs font-semibold text-[var(--color-black)] transition-all hover:scale-105 disabled:opacity-50"
+                      >
+                        {continuingId === h.id ? "Sending..." : `Continue (${p.pending} left)`}
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Progress bar */}
+                  <div className="mt-3">
+                    <div className="flex items-center justify-between font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-wider text-[var(--color-smoke)]">
+                      <span>
+                        {p.sent}/{p.total} sent
+                        {p.failed > 0 && <span className="ml-2 text-red-400">· {p.failed} failed</span>}
+                      </span>
+                      <span>{pct}%</span>
+                    </div>
+                    <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-[var(--color-ash)]">
+                      <div
+                        className="h-full rounded-full bg-[var(--color-coral)] transition-all"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
