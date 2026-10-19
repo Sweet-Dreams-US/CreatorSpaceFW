@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createServerSupabaseClient, getSupabaseAdmin } from "@/lib/supabase-server";
+import { authAdmin, createServerSupabaseClient, getSupabaseAdmin } from "@/lib/supabase-server";
 import { isAdmin } from "@/lib/admin";
 import { awardPoints } from "./points";
 
@@ -87,7 +87,7 @@ export async function createChallenge(data: ChallengeData) {
         const authIds = claimedCreators.filter((c) => c.auth_id).map((c) => c.auth_id!);
         const emailResults = await Promise.allSettled(
           authIds.map(async (authId) => {
-            const { data: authUser } = await getSupabaseAdmin().auth.admin.getUserById(authId);
+            const { data: authUser } = await authAdmin().getUserById(authId);
             return authUser?.user?.email;
           })
         );

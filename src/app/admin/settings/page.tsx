@@ -122,7 +122,7 @@ export default function AdminSettingsPage() {
         <div className="mt-4 space-y-2">
           <EnvRow name="NEXT_PUBLIC_SUPABASE_URL" set={envStatus["NEXT_PUBLIC_SUPABASE_URL"] ?? false} />
           <EnvRow name="NEXT_PUBLIC_SUPABASE_ANON_KEY" set={envStatus["NEXT_PUBLIC_SUPABASE_ANON_KEY"] ?? false} />
-          <EnvRow name="SUPABASE_SERVICE_ROLE_KEY" set={envStatus["SUPABASE_SERVICE_ROLE_KEY"] ?? false} />
+          <EnvRow name="SUPABASE_SERVER_TOKEN / SERVICE_ROLE_KEY" set={envStatus["SUPABASE_SERVICE_ROLE_KEY"] ?? false} />
           <EnvRow name="RESEND_API_KEY" set={envStatus["RESEND_API_KEY"] ?? false} />
           <EnvRow name="NEXT_PUBLIC_SITE_URL" set={envStatus["NEXT_PUBLIC_SITE_URL"] ?? false} />
         </div>

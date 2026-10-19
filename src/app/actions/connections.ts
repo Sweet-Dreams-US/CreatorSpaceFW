@@ -1,6 +1,6 @@
 "use server";
 
-import { createServerSupabaseClient, getSupabaseAdmin } from "@/lib/supabase-server";
+import { authAdmin, createServerSupabaseClient, getSupabaseAdmin } from "@/lib/supabase-server";
 import { createNotification } from "./notifications";
 
 export async function sendConnectionRequest(toCreatorId: string, message?: string) {
@@ -90,7 +90,7 @@ export async function sendConnectionRequest(toCreatorId: string, message?: strin
       .eq("id", toCreatorId)
       .single();
     if (sender && receiver?.auth_id) {
-      const { data: authUser } = await getSupabaseAdmin().auth.admin.getUserById(receiver.auth_id);
+      const { data: authUser } = await authAdmin().getUserById(receiver.auth_id);
       if (authUser?.user?.email) {
         const { sendConnectionRequestEmail } = await import("@/lib/email");
         await sendConnectionRequestEmail(

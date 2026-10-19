@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { gsap, ScrollTrigger } from "@/lib/gsap";
+import { mediaUrl } from "@/lib/supabase-config";
 
 export default function Scene8Close() {
   const sectionRef = useRef<HTMLDivElement>(null);
@@ -108,7 +109,7 @@ export default function Scene8Close() {
           {/* Creator Space logo — left edge */}
           <div className="close-fade shrink-0">
             <img
-              src="https://eymjahxzesuoahpwzifq.supabase.co/storage/v1/object/public/Media/Logos/Creator_Space_logo_black.png"
+              src={mediaUrl("Logos/Creator_Space_logo_black.png")}
               alt="Creator Space"
               className="h-14 w-auto sm:h-16"
             />
@@ -166,7 +167,7 @@ export default function Scene8Close() {
               rel="noopener noreferrer"
             >
               <img
-                src="https://eymjahxzesuoahpwzifq.supabase.co/storage/v1/object/public/Media/Logos/SweetDreamsUSlogowide.png"
+                src={mediaUrl("Logos/SweetDreamsUSlogowide.png")}
                 alt="Sweet Dreams"
                 className="h-10 w-auto transition-opacity hover:opacity-80 sm:h-12"
               />

@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { createServerSupabaseClient, getSupabaseAdmin } from "@/lib/supabase-server";
+import { authAdmin, createServerSupabaseClient, getSupabaseAdmin } from "@/lib/supabase-server";
 import { generateUniqueSlug } from "@/lib/utils";
 
 interface ClaimData {
@@ -146,7 +146,7 @@ export async function deleteAccount() {
     .eq("auth_id", user.id);
 
   // Delete the auth user
-  const { error } = await getSupabaseAdmin().auth.admin.deleteUser(user.id);
+  const { error } = await authAdmin().deleteUser(user.id);
   if (error) return { error: error.message };
 
   return { success: true };

@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createServerSupabaseClient, getSupabaseAdmin } from "@/lib/supabase-server";
+import { authAdmin, createServerSupabaseClient, getSupabaseAdmin } from "@/lib/supabase-server";
 import { isAdmin, ADMIN_EMAILS } from "@/lib/admin";
 import { verifyTurnstileToken } from "@/lib/turnstile";
 
@@ -205,7 +205,7 @@ export async function referInquiryToCreator(
   // Send email to creator if they have an account
   if (creator.auth_id) {
     try {
-      const { data: authUser } = await getSupabaseAdmin().auth.admin.getUserById(creator.auth_id);
+      const { data: authUser } = await authAdmin().getUserById(creator.auth_id);
       if (authUser?.user?.email) {
         const { sendJobReferralEmail } = await import("@/lib/email");
         await sendJobReferralEmail(

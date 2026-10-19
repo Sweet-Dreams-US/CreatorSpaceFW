@@ -1,4 +1,5 @@
 import { createBrowserClient } from "@supabase/ssr";
+import { DB_SCHEMA } from "@/lib/supabase-config";
 
 export function createClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
@@ -12,5 +13,6 @@ export function createClient() {
 
   return createBrowserClient(url, key, {
     cookieEncoding: "raw",
+    db: { schema: DB_SCHEMA },
   });
 }

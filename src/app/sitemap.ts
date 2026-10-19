@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import type { MetadataRoute } from "next";
+import { DB_SCHEMA } from "@/lib/supabase-config";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = "https://creatorspacefw.com";
@@ -10,7 +11,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   let creators: { slug: string; updated_at: string | null }[] = [];
   if (url && key) {
-    const supabase = createClient(url, key);
+    const supabase = createClient(url, key, { db: { schema: DB_SCHEMA } });
     const { data } = await supabase
       .from("creators")
       .select("slug, updated_at")

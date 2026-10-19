@@ -2,6 +2,7 @@
 
 import { useState, useRef } from "react";
 import { createClient } from "@/lib/supabase";
+import { AVATAR_BUCKET } from "@/lib/supabase-config";
 import {
   createProject,
   updateProject,
@@ -153,7 +154,7 @@ function ProjectCard({
       const supabase = createClient();
 
       const uploadPromise = supabase.storage
-        .from("avatars")
+        .from(AVATAR_BUCKET)
         .upload(path, file, { upsert: true });
 
       const timeoutPromise = new Promise<{ error: { message: string } }>((_, reject) =>
@@ -170,7 +171,7 @@ function ProjectCard({
 
       const {
         data: { publicUrl },
-      } = supabase.storage.from("avatars").getPublicUrl(path);
+      } = supabase.storage.from(AVATAR_BUCKET).getPublicUrl(path);
       await addProjectImage(project.id, `${publicUrl}?t=${Date.now()}`);
       onUpdate();
     } catch (err) {

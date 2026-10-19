@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createServerSupabaseClient, getSupabaseAdmin } from "@/lib/supabase-server";
+import { authAdmin, createServerSupabaseClient, getSupabaseAdmin } from "@/lib/supabase-server";
 import { isAdmin } from "@/lib/admin";
 import { createNotification } from "./notifications";
 import { awardPoints } from "./points";
@@ -197,7 +197,7 @@ export async function respondToCollabPost(postId: string, message: string) {
         .eq("id", creator.id)
         .single();
       if (postAuthor?.auth_id && responder) {
-        const { data: authUser } = await getSupabaseAdmin().auth.admin.getUserById(postAuthor.auth_id);
+        const { data: authUser } = await authAdmin().getUserById(postAuthor.auth_id);
         if (authUser?.user?.email) {
           const { sendCollabResponseNotification } = await import("@/lib/email");
           await sendCollabResponseNotification(
@@ -355,7 +355,7 @@ export async function respondToCollabResponse(
         .eq("id", responseData.creator_id)
         .single();
       if (responderCreator?.auth_id) {
-        const { data: authUser } = await getSupabaseAdmin().auth.admin.getUserById(responderCreator.auth_id);
+        const { data: authUser } = await authAdmin().getUserById(responderCreator.auth_id);
         if (authUser?.user?.email) {
           const { sendCollabDecisionNotification } = await import("@/lib/email");
           await sendCollabDecisionNotification(

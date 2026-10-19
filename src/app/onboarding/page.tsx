@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
+import { AVATAR_BUCKET } from "@/lib/supabase-config";
 import { updateProfile, updateAvatarUrl } from "@/app/actions/profile";
 import { useAuth } from "@/components/providers/AuthProvider";
 
@@ -84,11 +85,11 @@ export default function OnboardingPage() {
     const supabase = createClient();
 
     const { error: uploadError } = await supabase.storage
-      .from("avatars")
+      .from(AVATAR_BUCKET)
       .upload(path, file, { upsert: true });
 
     if (!uploadError) {
-      const { data: { publicUrl } } = supabase.storage.from("avatars").getPublicUrl(path);
+      const { data: { publicUrl } } = supabase.storage.from(AVATAR_BUCKET).getPublicUrl(path);
       const url = `${publicUrl}?t=${Date.now()}`;
       await updateAvatarUrl(url);
       setAvatarUrl(url);

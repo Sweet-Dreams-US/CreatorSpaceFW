@@ -9,6 +9,11 @@ const nextConfig: NextConfig = {
         hostname: "eymjahxzesuoahpwzifq.supabase.co",
         pathname: "/storage/**",
       },
+      {
+        protocol: "https",
+        hostname: "nxhwqtqroyerbbklywyn.supabase.co",
+        pathname: "/storage/**",
+      },
     ],
   },
   async headers() {

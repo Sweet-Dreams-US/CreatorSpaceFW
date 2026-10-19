@@ -9,6 +9,7 @@ import {
 } from "react";
 import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase";
+import { belongsToSite } from "@/lib/supabase-config";
 
 interface AuthContextType {
   user: User | null;
@@ -35,7 +36,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Then onAuthStateChange handles validation + updates
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!mounted) return;
-      if (session?.user) {
+      if (session?.user && belongsToSite(session.user.app_metadata)) {
         setUser(session.user);
         // Fetch role in background
         supabase
@@ -59,7 +60,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (!mounted) return;
-      const newUser = session?.user ?? null;
+      const sessionUser = session?.user ?? null;
+      const newUser = sessionUser && belongsToSite(sessionUser.app_metadata) ? sessionUser : null;
       setUser(newUser);
 
       if (newUser) {

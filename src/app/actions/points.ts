@@ -1,6 +1,6 @@
 "use server";
 
-import { createServerSupabaseClient, getSupabaseAdmin } from "@/lib/supabase-server";
+import { authAdmin, createServerSupabaseClient, getSupabaseAdmin } from "@/lib/supabase-server";
 import { isAdmin } from "@/lib/admin";
 import { sendSpotlightEmail } from "@/lib/email";
 
@@ -130,7 +130,7 @@ export async function selectSpotlight(
         const authIds = claimedCreators.map((c: { auth_id: string }) => c.auth_id);
         const emailResults = await Promise.allSettled(
           authIds.map(async (authId: string) => {
-            const { data } = await getSupabaseAdmin().auth.admin.getUserById(authId);
+            const { data } = await authAdmin().getUserById(authId);
             return data?.user?.email;
           })
         );

@@ -2,6 +2,7 @@
 
 import { useState, useRef } from "react";
 import { createClient } from "@/lib/supabase";
+import { AVATAR_BUCKET } from "@/lib/supabase-config";
 import { updateAvatarUrl } from "@/app/actions/profile";
 
 interface AvatarUploadProps {
@@ -59,7 +60,7 @@ export default function AvatarUpload({
     const supabase = createClient();
 
     const { error: uploadError } = await supabase.storage
-      .from("avatars")
+      .from(AVATAR_BUCKET)
       .upload(path, file, { upsert: true });
 
     if (uploadError) {
@@ -69,7 +70,7 @@ export default function AvatarUpload({
 
     const {
       data: { publicUrl },
-    } = supabase.storage.from("avatars").getPublicUrl(path);
+    } = supabase.storage.from(AVATAR_BUCKET).getPublicUrl(path);
 
     // Append cache-buster
     const url = `${publicUrl}?t=${Date.now()}`;

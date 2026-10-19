@@ -4,6 +4,7 @@ import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase";
+import { SITE_TENANT } from "@/lib/supabase-config";
 import { claimOrCreateCreator } from "@/app/actions/auth";
 import PasswordInput from "@/components/ui/PasswordInput";
 import TurnstileWidget from "@/components/ui/TurnstileWidget";
@@ -61,7 +62,7 @@ function SignupForm() {
       email,
       password,
       options: {
-        data: { first_name: firstName, last_name: lastName },
+        data: { first_name: firstName, last_name: lastName, site: SITE_TENANT },
       },
     });
 

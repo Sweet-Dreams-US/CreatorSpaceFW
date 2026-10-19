@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase";
+import { belongsToSite } from "@/lib/supabase-config";
 import { resendVerificationEmail } from "@/app/actions/auth";
 import PasswordInput from "@/components/ui/PasswordInput";
 import TurnstileWidget from "@/components/ui/TurnstileWidget";
@@ -32,13 +33,20 @@ export default function LoginPage() {
     }
 
     const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
     if (error) {
       setError(error.message);
+      setLoading(false);
+      return;
+    }
+
+    if (!belongsToSite(data.user?.app_metadata)) {
+      await supabase.auth.signOut({ scope: "local" });
+      setError("Invalid login credentials");
       setLoading(false);
       return;
     }

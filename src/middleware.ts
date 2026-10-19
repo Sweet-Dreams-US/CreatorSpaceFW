@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { belongsToSite } from "@/lib/supabase-config";
 
 export async function middleware(request: NextRequest) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
@@ -34,7 +35,12 @@ export async function middleware(request: NextRequest) {
   );
 
   // Refresh the session so it doesn't expire
-  await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  // Shared Supabase project: a login from another site never gets a session here.
+  if (user && !belongsToSite(user.app_metadata)) {
+    await supabase.auth.signOut({ scope: "local" });
+  }
 
   return supabaseResponse;
 }
