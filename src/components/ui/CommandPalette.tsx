@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { useHasBlog } from "@/lib/use-has-blog";
 
 const SECTIONS = [
   { label: "Home — The Arrival", id: "scene-arrival", key: "arrival" },
@@ -26,10 +27,12 @@ export default function CommandPalette() {
   const [query, setQuery] = useState("");
   const [selectedIdx, setSelectedIdx] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const hasBlog = useHasBlog();
 
+  const pages = hasBlog ? [...PAGES, { label: "Blog", href: "/blog", key: "blog" }] : PAGES;
   const allItems = [
     ...SECTIONS.map((s) => ({ ...s, type: "section" as const })),
-    ...PAGES.map((p) => ({ ...p, type: "page" as const, id: "" })),
+    ...pages.map((p) => ({ ...p, type: "page" as const, id: "" })),
   ];
 
   const filtered = allItems.filter((item) =>

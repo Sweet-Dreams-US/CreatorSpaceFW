@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { isAdmin, hasModeratorAccess } from "@/lib/admin";
+import { useHasBlog } from "@/lib/use-has-blog";
 
 const NAV_LINKS = [
   { label: "Directory", href: "/directory" },
@@ -15,10 +16,17 @@ const NAV_LINKS = [
   { label: "Hire", href: "/hire", highlight: true },
 ];
 
+// The Blog link only shows once a post has been released.
+const BLOG_LINK: (typeof NAV_LINKS)[number] = { label: "Blog", href: "/blog" };
+
 export default function CommunityNav() {
   const pathname = usePathname();
   const { user, loading, role } = useAuth();
   const showAdmin = !loading && !!user && (isAdmin(user.email) || hasModeratorAccess(role));
+  const hasBlog = useHasBlog();
+  const links = hasBlog
+    ? [...NAV_LINKS.slice(0, -1), BLOG_LINK, ...NAV_LINKS.slice(-1)]
+    : NAV_LINKS;
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-4">
@@ -30,7 +38,7 @@ export default function CommunityNav() {
           ← Home
         </Link>
         <span className="hidden h-3 w-px bg-[var(--color-ash)] sm:block" />
-        {NAV_LINKS.map((link) => {
+        {links.map((link) => {
           const isActive =
             pathname === link.href ||
             (link.href !== "/" && pathname.startsWith(link.href + "/"));

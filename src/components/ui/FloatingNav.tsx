@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { isAdmin } from "@/lib/admin";
 import { createClient } from "@/lib/supabase";
+import { useHasBlog } from "@/lib/use-has-blog";
 
 const SCENES = [
   { id: "scene-arrival", label: "Arrival" },
@@ -21,6 +22,7 @@ export default function FloatingNav() {
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
   const { user } = useAuth();
   const userIsAdmin = !!user && isAdmin(user.email);
+  const hasBlog = useHasBlog();
   const router = useRouter();
 
   function handleLogout() {
@@ -70,6 +72,11 @@ export default function FloatingNav() {
       <Link href="/challenges" className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-widest text-[var(--color-smoke)] transition-colors hover:text-[var(--color-white)]">
         Challenges
       </Link>
+      {hasBlog && (
+        <Link href="/blog" className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-widest text-[var(--color-smoke)] transition-colors hover:text-[var(--color-white)]">
+          Blog
+        </Link>
+      )}
       <Link href="/hire" className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-widest text-[var(--color-lime)] transition-colors hover:text-[var(--color-white)]">
         Hire
       </Link>

@@ -2,6 +2,17 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // Blog posts are read from content/blog when a page revalidates (hourly) or
+  // is requested, which is how a post releases on its date without a deploy.
+  // Ship the files with every function that reads them.
+  outputFileTracingIncludes: {
+    "/blog": ["./content/blog/**/*"],
+    "/blog/[slug]": ["./content/blog/**/*"],
+    "/blog/rss.xml": ["./content/blog/**/*"],
+    "/blog/images/[slug]/[file]": ["./content/blog/**/*"],
+    "/api/blog/status": ["./content/blog/**/*"],
+    "/sitemap.xml": ["./content/blog/**/*"],
+  },
   images: {
     remotePatterns: [
       {
@@ -34,7 +45,7 @@ const nextConfig: NextConfig = {
       {
         source: "/sitemap.xml",
         headers: [
-          { key: "Cache-Control", value: "public, max-age=3600, s-maxage=86400" },
+          { key: "Cache-Control", value: "public, max-age=3600, s-maxage=3600" },
         ],
       },
     ];

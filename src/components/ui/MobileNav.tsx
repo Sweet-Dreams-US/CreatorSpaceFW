@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { isAdmin } from "@/lib/admin";
 import { createClient } from "@/lib/supabase";
+import { useHasBlog } from "@/lib/use-has-blog";
 
 const SCENES = [
   { id: "scene-arrival", label: "Home" },
@@ -20,6 +21,7 @@ export default function MobileNav() {
   const [active, setActive] = useState(0);
   const { user } = useAuth();
   const userIsAdmin = !!user && isAdmin(user.email);
+  const hasBlog = useHasBlog();
   const router = useRouter();
 
   function handleLogout() {
@@ -41,6 +43,7 @@ export default function MobileNav() {
     { label: "Skills Exchange", href: "/learn" },
     { label: "Hire a Creator", href: "/hire" },
     { label: "Spotlight", href: "/spotlight" },
+    ...(hasBlog ? [{ label: "Blog", href: "/blog" }] : []),
     { label: "Updates & Feedback", href: "/updates" },
     ...(userIsAdmin ? [{ label: "Admin Dashboard", href: "/admin" }] : []),
     ...(user

@@ -1,6 +1,10 @@
 import { createClient } from "@supabase/supabase-js";
 import type { MetadataRoute } from "next";
 import { DB_SCHEMA } from "@/lib/supabase-config";
+import { getReleasedPosts } from "@/lib/blog";
+
+// Rebuilt at least hourly, so a blog post enters the sitemap on its release date without a deploy.
+export const revalidate = 3600;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = "https://creatorspacefw.com";
@@ -28,6 +32,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const now = new Date().toISOString();
 
+  // Released posts only. The Blog index is listed once there is at least one.
+  const posts = await getReleasedPosts();
+  const blogEntries: MetadataRoute.Sitemap = posts.length
+    ? [
+        { url: `${baseUrl}/blog`, lastModified: new Date(`${posts[0].release_on}T12:00:00Z`), changeFrequency: "weekly", priority: 0.7 },
+        ...posts.map((p) => ({
+          url: `${baseUrl}/blog/${p.slug}`,
+          lastModified: new Date(`${p.release_on}T12:00:00Z`),
+          changeFrequency: "monthly" as const,
+          priority: 0.6,
+        })),
+      ]
+    : [];
+
   return [
     { url: baseUrl, lastModified: now, changeFrequency: "daily", priority: 1.0 },
     { url: `${baseUrl}/directory`, lastModified: now, changeFrequency: "daily", priority: 0.9 },
@@ -37,6 +55,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${baseUrl}/learn`, lastModified: now, changeFrequency: "weekly", priority: 0.7 },
     { url: `${baseUrl}/hire`, lastModified: now, changeFrequency: "monthly", priority: 0.9 },
     { url: `${baseUrl}/spotlight`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
+    ...blogEntries,
     ...creatorEntries,
   ];
 }

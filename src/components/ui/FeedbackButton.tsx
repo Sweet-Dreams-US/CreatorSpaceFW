@@ -43,7 +43,7 @@ export default function FeedbackButton() {
       {/* Floating button */}
       <button
         onClick={() => setOpen(!open)}
-        className="fixed bottom-5 right-5 z-[90] flex h-11 w-11 items-center justify-center rounded-full bg-[var(--color-coral)] text-[var(--color-black)] shadow-[0_0_20px_rgba(250,146,119,0.3)] transition-all hover:scale-110"
+        className="fixed bottom-[calc(1.25rem+var(--blog-bar-offset,0px))] right-5 z-[90] flex h-11 w-11 items-center justify-center rounded-full bg-[var(--color-coral)] text-[var(--color-black)] shadow-[0_0_20px_rgba(250,146,119,0.3)] transition-all hover:scale-110"
         aria-label="Report bug or give feedback"
       >
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -53,7 +53,7 @@ export default function FeedbackButton() {
 
       {/* Panel */}
       {open && (
-        <div className="fixed bottom-20 right-5 z-[91] w-80 rounded-xl border border-white/10 bg-[var(--color-dark)] p-5 shadow-2xl">
+        <div className="fixed bottom-[calc(5rem+var(--blog-bar-offset,0px))] right-5 z-[91] w-80 rounded-xl border border-white/10 bg-[var(--color-dark)] p-5 shadow-2xl">
           {sent ? (
             <div className="py-4 text-center">
               <p className="font-[family-name:var(--font-display)] text-lg text-[var(--color-lime)]">Thanks!</p>
